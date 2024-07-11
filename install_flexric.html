@@ -1,0 +1,203 @@
+<!DOCTYPE html><html><head>
+      <title>install_flexric</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="file:///c:\Users\yaoyu\.vscode\extensions\shd101wyy.markdown-preview-enhanced-0.8.13\crossnote\dependencies\katex\katex.min.css">
+      
+      
+      
+      
+      
+      <style>
+      code[class*=language-],pre[class*=language-]{color:#333;background:0 0;font-family:Consolas,"Liberation Mono",Menlo,Courier,monospace;text-align:left;white-space:pre;word-spacing:normal;word-break:normal;word-wrap:normal;line-height:1.4;-moz-tab-size:8;-o-tab-size:8;tab-size:8;-webkit-hyphens:none;-moz-hyphens:none;-ms-hyphens:none;hyphens:none}pre[class*=language-]{padding:.8em;overflow:auto;border-radius:3px;background:#f5f5f5}:not(pre)>code[class*=language-]{padding:.1em;border-radius:.3em;white-space:normal;background:#f5f5f5}.token.blockquote,.token.comment{color:#969896}.token.cdata{color:#183691}.token.doctype,.token.macro.property,.token.punctuation,.token.variable{color:#333}.token.builtin,.token.important,.token.keyword,.token.operator,.token.rule{color:#a71d5d}.token.attr-value,.token.regex,.token.string,.token.url{color:#183691}.token.atrule,.token.boolean,.token.code,.token.command,.token.constant,.token.entity,.token.number,.token.property,.token.symbol{color:#0086b3}.token.prolog,.token.selector,.token.tag{color:#63a35c}.token.attr-name,.token.class,.token.class-name,.token.function,.token.id,.token.namespace,.token.pseudo-class,.token.pseudo-element,.token.url-reference .token.variable{color:#795da3}.token.entity{cursor:help}.token.title,.token.title .token.punctuation{font-weight:700;color:#1d3e81}.token.list{color:#ed6a43}.token.inserted{background-color:#eaffea;color:#55a532}.token.deleted{background-color:#ffecec;color:#bd2c00}.token.bold{font-weight:700}.token.italic{font-style:italic}.language-json .token.property{color:#183691}.language-markup .token.tag .token.punctuation{color:#333}.language-css .token.function,code.language-css{color:#0086b3}.language-yaml .token.atrule{color:#63a35c}code.language-yaml{color:#183691}.language-ruby .token.function{color:#333}.language-markdown .token.url{color:#795da3}.language-makefile .token.symbol{color:#795da3}.language-makefile .token.variable{color:#183691}.language-makefile .token.builtin{color:#0086b3}.language-bash .token.keyword{color:#0086b3}pre[data-line]{position:relative;padding:1em 0 1em 3em}pre[data-line] .line-highlight-wrapper{position:absolute;top:0;left:0;background-color:transparent;display:block;width:100%}pre[data-line] .line-highlight{position:absolute;left:0;right:0;padding:inherit 0;margin-top:1em;background:hsla(24,20%,50%,.08);background:linear-gradient(to right,hsla(24,20%,50%,.1) 70%,hsla(24,20%,50%,0));pointer-events:none;line-height:inherit;white-space:pre}pre[data-line] .line-highlight:before,pre[data-line] .line-highlight[data-end]:after{content:attr(data-start);position:absolute;top:.4em;left:.6em;min-width:1em;padding:0 .5em;background-color:hsla(24,20%,50%,.4);color:#f4f1ef;font:bold 65%/1.5 sans-serif;text-align:center;vertical-align:.3em;border-radius:999px;text-shadow:none;box-shadow:0 1px #fff}pre[data-line] .line-highlight[data-end]:after{content:attr(data-end);top:auto;bottom:.4em}html body{font-family:'Helvetica Neue',Helvetica,'Segoe UI',Arial,freesans,sans-serif;font-size:16px;line-height:1.6;color:#333;background-color:#fff;overflow:initial;box-sizing:border-box;word-wrap:break-word}html body>:first-child{margin-top:0}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{line-height:1.2;margin-top:1em;margin-bottom:16px;color:#000}html body h1{font-size:2.25em;font-weight:300;padding-bottom:.3em}html body h2{font-size:1.75em;font-weight:400;padding-bottom:.3em}html body h3{font-size:1.5em;font-weight:500}html body h4{font-size:1.25em;font-weight:600}html body h5{font-size:1.1em;font-weight:600}html body h6{font-size:1em;font-weight:600}html body h1,html body h2,html body h3,html body h4,html body h5{font-weight:600}html body h5{font-size:1em}html body h6{color:#5c5c5c}html body strong{color:#000}html body del{color:#5c5c5c}html body a:not([href]){color:inherit;text-decoration:none}html body a{color:#08c;text-decoration:none}html body a:hover{color:#00a3f5;text-decoration:none}html body img{max-width:100%}html body>p{margin-top:0;margin-bottom:16px;word-wrap:break-word}html body>ol,html body>ul{margin-bottom:16px}html body ol,html body ul{padding-left:2em}html body ol.no-list,html body ul.no-list{padding:0;list-style-type:none}html body ol ol,html body ol ul,html body ul ol,html body ul ul{margin-top:0;margin-bottom:0}html body li{margin-bottom:0}html body li.task-list-item{list-style:none}html body li>p{margin-top:0;margin-bottom:0}html body .task-list-item-checkbox{margin:0 .2em .25em -1.8em;vertical-align:middle}html body .task-list-item-checkbox:hover{cursor:pointer}html body blockquote{margin:16px 0;font-size:inherit;padding:0 15px;color:#5c5c5c;background-color:#f0f0f0;border-left:4px solid #d6d6d6}html body blockquote>:first-child{margin-top:0}html body blockquote>:last-child{margin-bottom:0}html body hr{height:4px;margin:32px 0;background-color:#d6d6d6;border:0 none}html body table{margin:10px 0 15px 0;border-collapse:collapse;border-spacing:0;display:block;width:100%;overflow:auto;word-break:normal;word-break:keep-all}html body table th{font-weight:700;color:#000}html body table td,html body table th{border:1px solid #d6d6d6;padding:6px 13px}html body dl{padding:0}html body dl dt{padding:0;margin-top:16px;font-size:1em;font-style:italic;font-weight:700}html body dl dd{padding:0 16px;margin-bottom:16px}html body code{font-family:Menlo,Monaco,Consolas,'Courier New',monospace;font-size:.85em;color:#000;background-color:#f0f0f0;border-radius:3px;padding:.2em 0}html body code::after,html body code::before{letter-spacing:-.2em;content:'\00a0'}html body pre>code{padding:0;margin:0;word-break:normal;white-space:pre;background:0 0;border:0}html body .highlight{margin-bottom:16px}html body .highlight pre,html body pre{padding:1em;overflow:auto;line-height:1.45;border:#d6d6d6;border-radius:3px}html body .highlight pre{margin-bottom:0;word-break:normal}html body pre code,html body pre tt{display:inline;max-width:initial;padding:0;margin:0;overflow:initial;line-height:inherit;word-wrap:normal;background-color:transparent;border:0}html body pre code:after,html body pre code:before,html body pre tt:after,html body pre tt:before{content:normal}html body blockquote,html body dl,html body ol,html body p,html body pre,html body ul{margin-top:0;margin-bottom:16px}html body kbd{color:#000;border:1px solid #d6d6d6;border-bottom:2px solid #c7c7c7;padding:2px 4px;background-color:#f0f0f0;border-radius:3px}@media print{html body{background-color:#fff}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{color:#000;page-break-after:avoid}html body blockquote{color:#5c5c5c}html body pre{page-break-inside:avoid}html body table{display:table}html body img{display:block;max-width:100%;max-height:100%}html body code,html body pre{word-wrap:break-word;white-space:pre}}.markdown-preview{width:100%;height:100%;box-sizing:border-box}.markdown-preview ul{list-style:disc}.markdown-preview ul ul{list-style:circle}.markdown-preview ul ul ul{list-style:square}.markdown-preview ol{list-style:decimal}.markdown-preview ol ol,.markdown-preview ul ol{list-style-type:lower-roman}.markdown-preview ol ol ol,.markdown-preview ol ul ol,.markdown-preview ul ol ol,.markdown-preview ul ul ol{list-style-type:lower-alpha}.markdown-preview .newpage,.markdown-preview .pagebreak{page-break-before:always}.markdown-preview pre.line-numbers{position:relative;padding-left:3.8em;counter-reset:linenumber}.markdown-preview pre.line-numbers>code{position:relative}.markdown-preview pre.line-numbers .line-numbers-rows{position:absolute;pointer-events:none;top:1em;font-size:100%;left:0;width:3em;letter-spacing:-1px;border-right:1px solid #999;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}.markdown-preview pre.line-numbers .line-numbers-rows>span{pointer-events:none;display:block;counter-increment:linenumber}.markdown-preview pre.line-numbers .line-numbers-rows>span:before{content:counter(linenumber);color:#999;display:block;padding-right:.8em;text-align:right}.markdown-preview .mathjax-exps .MathJax_Display{text-align:center!important}.markdown-preview:not([data-for=preview]) .code-chunk .code-chunk-btn-group{display:none}.markdown-preview:not([data-for=preview]) .code-chunk .status{display:none}.markdown-preview:not([data-for=preview]) .code-chunk .output-div{margin-bottom:16px}.markdown-preview .md-toc{padding:0}.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link{display:inline;padding:.25rem 0}.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link div,.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link p{display:inline}.markdown-preview .md-toc .md-toc-link-wrapper.highlighted .md-toc-link{font-weight:800}.scrollbar-style::-webkit-scrollbar{width:8px}.scrollbar-style::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}.scrollbar-style::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,.66);border:4px solid rgba(150,150,150,.66);background-clip:content-box}html body[for=html-export]:not([data-presentation-mode]){position:relative;width:100%;height:100%;top:0;left:0;margin:0;padding:0;overflow:auto}html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{position:relative;top:0;min-height:100vh}@media screen and (min-width:914px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{padding:2em calc(50% - 457px + 2em)}}@media screen and (max-width:914px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{font-size:14px!important;padding:1em}}@media print{html body[for=html-export]:not([data-presentation-mode]) #sidebar-toc-btn{display:none}}html body[for=html-export]:not([data-presentation-mode]) #sidebar-toc-btn{position:fixed;bottom:8px;left:8px;font-size:28px;cursor:pointer;color:inherit;z-index:99;width:32px;text-align:center;opacity:.4}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] #sidebar-toc-btn{opacity:1}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc{position:fixed;top:0;left:0;width:300px;height:100%;padding:32px 0 48px 0;font-size:14px;box-shadow:0 0 4px rgba(150,150,150,.33);box-sizing:border-box;overflow:auto;background-color:inherit}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar{width:8px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,.66);border:4px solid rgba(150,150,150,.66);background-clip:content-box}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc a{text-decoration:none}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc{padding:0 16px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link{display:inline;padding:.25rem 0}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link div,html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link p{display:inline}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper.highlighted .md-toc-link{font-weight:800}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{left:300px;width:calc(100% - 300px);padding:2em calc(50% - 457px - 300px / 2);margin:0;box-sizing:border-box}@media screen and (max-width:1274px){html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{width:100%}}html body[for=html-export]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .markdown-preview{left:50%;transform:translateX(-50%)}html body[for=html-export]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .md-sidebar-toc{display:none}
+/* Please visit the URL below for more information: */
+/*   https://shd101wyy.github.io/markdown-preview-enhanced/#/customize-css */
+
+      </style>
+      <!-- The content below will be included at the end of the <head> element. --><script type="text/javascript">
+  document.addEventListener("DOMContentLoaded", function () {
+    // your code here
+  });
+</script></head><body for="html-export">
+    
+    
+      <div class="crossnote markdown-preview  ">
+      
+<p>building a new flexric on top of the original core network cloudlab profile</p>
+<p>You would want to have at least GCC-9. The current version of GCC 7 on the cloudlab profile is just way too old to compile the flexric and OAI. Follow the instructions below:</p>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code><span class="token comment"># Add the ubuntu-toolchain-r PPA:</span>
+<span class="token function">sudo</span> add-apt-repository ppa:ubuntu-toolchain-r/test
+<span class="token function">sudo</span> <span class="token function">apt-get</span> update
+<span class="token comment"># install actually</span>
+<span class="token function">sudo</span> <span class="token function">apt-get</span> <span class="token function">install</span> gcc-9 g++-9
+<span class="token comment"># set the new version as the default</span>
+<span class="token function">sudo</span> update-alternatives <span class="token parameter variable">--install</span> /usr/bin/gcc gcc /usr/bin/gcc-9 <span class="token number">60</span> <span class="token parameter variable">--slave</span> /usr/bin/g++ g++ /usr/bin/g++-9
+<span class="token function">sudo</span> update-alternatives <span class="token parameter variable">--config</span> gcc
+<span class="token comment"># verify the installation </span>
+gcc <span class="token parameter variable">--version</span>
+</code></pre><ol>
+<li>need to install the libpcre2-dev</li>
+</ol>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code><span class="token function">sudo</span> <span class="token function">apt-get</span> <span class="token function">install</span> libpcre2-dev
+</code></pre><ol start="2">
+<li>need to update the cmake to at least 3.15</li>
+</ol>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code><span class="token function">sudo</span> <span class="token function">apt-get</span> remove cmake
+<span class="token function">wget</span> https://github.com/Kitware/CMake/releases/download/v3.15.7/cmake-3.15.7.tar.gz
+<span class="token function">tar</span> <span class="token parameter variable">-xzvf</span> cmake-3.15.7.tar.gz
+<span class="token builtin class-name">cd</span> cmake-3.15.7
+./bootstrap
+<span class="token comment"># the make may take a while, accelerate that with multi threading with make -j 8, but I always forget to do that myself. O/W it is extremely slow.</span>
+<span class="token function">make</span>
+<span class="token function">sudo</span> <span class="token function">make</span> <span class="token function">install</span>
+<span class="token comment"># adding to the path</span>
+<span class="token builtin class-name">export</span> <span class="token assign-left variable"><span class="token environment constant">PATH</span></span><span class="token operator">=</span>/users/PeterYao/cmake-3.15.7/bin:<span class="token environment constant">$PATH</span>
+
+cmake <span class="token parameter variable">--version</span>
+
+</code></pre><ol start="3">
+<li>
+<p>follow the commands at the flexric readme to install swig, checkout felxric, and build the file</p>
+</li>
+<li>
+<p>run the local test suite to check if the installation is successful</p>
+</li>
+</ol>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code>ctest 
+</code></pre><ol start="5">
+<li>before starting the CU/DU, add the following lines to the CU configuration file at the location: /local/repository/etc/cu.conf</li>
+</ol>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>e2_agent = {
+  near_ric_ip_addr = "127.0.0.1";
+  sm_dir = "/usr/local/lib/flexric/"
+}
+
+</code></pre><p>in order to configure the E2 agent.</p>
+<ol start="6">
+<li>
+<p>Do the same thing for the DU, add the same block to the DU configuration file at location /local/repository/etc/du.conf</p>
+</li>
+<li>
+<p>Because we follow a CU/DU split, bring up the CU/DU as follows:</p>
+</li>
+</ol>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code><span class="token builtin class-name">cd</span> /opt/openairinterface5g/cmake_targets/
+<span class="token function">sudo</span> <span class="token assign-left variable">RFSIMULATOR</span><span class="token operator">=</span>server ./ran_build/build/nr-softmodem <span class="token parameter variable">--rfsim</span> <span class="token parameter variable">--sa</span> <span class="token parameter variable">-O</span> /local/repository/etc/cu.conf
+
+<span class="token builtin class-name">cd</span> /opt/openairinterface5g/cmake_targets/
+<span class="token function">sudo</span> <span class="token assign-left variable">RFSIMULATOR</span><span class="token operator">=</span>server ./ran_build/build/nr-softmodem <span class="token parameter variable">--rfsim</span> <span class="token parameter variable">--sa</span> <span class="token parameter variable">-O</span> /local/repository/etc/du.conf
+</code></pre><ol start="8">
+<li>In another windows, Start the UE</li>
+</ol>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code><span class="token builtin class-name">cd</span> /opt/openairinterface5g/cmake_targets
+<span class="token function">sudo</span> <span class="token assign-left variable">RFSIMULATOR</span><span class="token operator">=</span><span class="token number">127.0</span>.0.1 ./ran_build/build/nr-uesoftmodem <span class="token parameter variable">-O</span> /local/repository/etc/ue.conf <span class="token parameter variable">-r</span> <span class="token number">106</span> <span class="token parameter variable">-C</span> <span class="token number">3619200000</span> <span class="token parameter variable">--sa</span> <span class="token parameter variable">--nokrnmod</span> <span class="token parameter variable">--numerology</span> <span class="token number">1</span> <span class="token parameter variable">--band</span> <span class="token number">78</span> <span class="token parameter variable">--rfsim</span> <span class="token parameter variable">--rfsimulator.options</span> chanmod
+</code></pre><ol start="9">
+<li>After running the RIC and the xApp with the following commands, an assertion failure occurs.</li>
+</ol>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code><span class="token builtin class-name">cd</span> flexric
+./build/examples/ric/nearRT-RIC
+./build/examples/xApp/c/monitor/xapp_kpm_moni
+</code></pre><p>nearRT-RIC: /users/PeterYao/flexric/src/lib/e2ap/v2_03/enc/e2ap_msg_enc_asn.c:3165: e2ap_enc_e42_setup_response_asn_pdu: Assertion `sr-&gt;len_e2_nodes_conn &gt; 0 &amp;&amp; "No global node conected??"' failed.<br>
+Aborted</p>
+<p>The RIC crashes after trying to start the Service Model. Based on the error message, suspect that the e2 nodes are not attached successfully.</p>
+<ol start="10">
+<li>It turns out that the OAI RAN version is just too old to support E2 interface. We need to reinstall the latest version from source.</li>
+</ol>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code><span class="token function">git</span> clone https://gitlab.eurecom.fr/oai/openairinterface5g.git
+
+<span class="token comment"># install all dependencies</span>
+<span class="token builtin class-name">cd</span> openairinterface5g/cmake_targets/
+
+<span class="token comment"># but before that we want the UHD package to be of correct version. If we just pull the latest version, the build is not going to be successful</span>
+<span class="token builtin class-name">export</span> <span class="token assign-left variable">BUILD_UHD_FROM_SOURCE</span><span class="token operator">=</span>True
+<span class="token builtin class-name">export</span> <span class="token assign-left variable">UHD_VERSION</span><span class="token operator">=</span><span class="token number">3.15</span>.0.0
+./build_oai <span class="token parameter variable">-I</span> <span class="token parameter variable">-w</span> USRP
+
+<span class="token comment"># I did not install the new asn1c from source</span>
+
+<span class="token comment"># build the physical simulators (this part can be extremely lengthy)</span>
+<span class="token builtin class-name">cd</span> openairinterface5g/cmake_targets/
+./build_oai <span class="token parameter variable">--phy_simulators</span>
+
+<span class="token comment"># we also need to build the base stations and the UEs</span>
+<span class="token builtin class-name">cd</span> openairinterface5g/cmake_targets/
+./build_oai <span class="token parameter variable">-w</span> USRP <span class="token parameter variable">--eNB</span> <span class="token parameter variable">--UE</span> <span class="token parameter variable">--nrUE</span> <span class="token parameter variable">--gNB</span>
+
+
+</code></pre><p>It turns out that the d430 node on emulab does not have enough storage for compilation. I am now swithing to the d820 node. And Gosh, it is taking forever to boot that machine. We need to rebuild the cmake and the gcc after the new machine boots up.</p>
+<p>It turns out that event he d820 node does not have enough space.<br>
+To turn around the situation, we should really allocate enough space at the beginning, and then compile and do everything in the newly mounted space</p>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code><span class="token comment"># check how much space has been mounted</span>
+<span class="token function">df</span> <span class="token parameter variable">-h</span>
+<span class="token comment"># allocate space during the experiment</span>
+<span class="token builtin class-name">cd</span> /
+<span class="token function">sudo</span> <span class="token function">mkdir</span> mydata
+<span class="token function">sudo</span> /usr/local/etc/emulab/mkextrafs.pl /mydata
+<span class="token comment"># check space usage again</span>
+<span class="token function">df</span> <span class="token parameter variable">-h</span>
+
+<span class="token comment"># change the ownership of this new space</span>
+<span class="token function">sudo</span> <span class="token function">chown</span> PeterYao:nyunetworks mydata
+
+<span class="token function">chmod</span> <span class="token number">775</span> mydata
+
+<span class="token comment"># verify the result</span>
+<span class="token function">ls</span> <span class="token parameter variable">-ld</span> mydata
+</code></pre><p>You should see something like this</p>
+<p>drwxrwxr-x 4 PeterYao nyunetworks 4096 Jun 18 14:55 mydata</p>
+<p>Then redownload the OAI RAN repo, and recompile it again inside mydata.</p>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code><span class="token function">git</span> clone https://gitlab.eurecom.fr/oai/openairinterface5g.git
+</code></pre><p>My observation is that after starting the monolithic gnb using the command:</p>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code><span class="token comment"># from https://gitlab.eurecom.fr/oai/openairinterface5g/-/blob/develop/doc/NR_SA_Tutorial_OAI_nrUE.md</span>
+<span class="token function">sudo</span> ./nr-softmodem <span class="token parameter variable">-O</span> <span class="token punctuation">..</span>/<span class="token punctuation">..</span>/<span class="token punctuation">..</span>/targets/PROJECTS/GENERIC-NR-5GC/CONF/gnb.sa.band78.fr1.106PRB.usrpb210.conf --gNBs.<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span>.min_rxtxtime <span class="token number">6</span> <span class="token parameter variable">--rfsim</span> <span class="token parameter variable">--sa</span>
+<span class="token comment"># or this from https://gitlab.eurecom.fr/oai/openairinterface5g/-/blob/develop/openair2/E2AP/README.md#223-installation-of-service-models-sms</span>
+<span class="token function">sudo</span> ./nr-softmodem <span class="token parameter variable">-O</span> <span class="token punctuation">..</span>/<span class="token punctuation">..</span>/<span class="token punctuation">..</span>/targets/PROJECTS/GENERIC-NR-5GC/CONF/gnb.sa.band78.fr1.106PRB.usrpb210.conf <span class="token parameter variable">--rfsim</span> <span class="token parameter variable">--sa</span> <span class="token parameter variable">-E</span>
+</code></pre><p>the core network does not seem to register this gNB, with output like this:</p>
+<p><img src="https://i.imgur.com/3uBNBaB.jpeg" alt="屏幕截图 2024-06-19 084841"></p>
+<p>This is weird, because the core network should have registered the device.</p>
+<p>Try again by bringing up the core network according to the tutorial.</p>
+<p><a href="https://gitlab.eurecom.fr/oai/openairinterface5g/-/blob/develop/doc/NR_SA_Tutorial_OAI_CN5G.md">https://gitlab.eurecom.fr/oai/openairinterface5g/-/blob/develop/doc/NR_SA_Tutorial_OAI_CN5G.md</a></p>
+<p>Shut down the original core network with</p>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code><span class="token builtin class-name">cd</span> /opt/oai-cn5g-fed/docker-compose  
+
+<span class="token function">sudo</span> python3 ./core-network.py <span class="token parameter variable">--type</span> stop-basic <span class="token parameter variable">--scenario</span> <span class="token number">1</span>
+</code></pre><p>check with sudo docker ps</p>
+<p>Alright, here is what I did:</p>
+<ol>
+<li>
+<p>Start the core network latest version following instructions from <a href="https://gitlab.eurecom.fr/oai/openairinterface5g/-/blob/develop/doc/NR_SA_Tutorial_OAI_CN5G.md#21-oai-cn5g-pre-requisites">https://gitlab.eurecom.fr/oai/openairinterface5g/-/blob/develop/doc/NR_SA_Tutorial_OAI_CN5G.md#21-oai-cn5g-pre-requisites</a> and brings up the dockerized core network containers.</p>
+</li>
+<li>
+<p>start the monolithic Gnb and UE following instructions from <a href="https://gitlab.eurecom.fr/oai/openairinterface5g/-/blob/develop/doc/RUNMODEM.md#launch-gnb">https://gitlab.eurecom.fr/oai/openairinterface5g/-/blob/develop/doc/RUNMODEM.md#launch-gnb</a>. Brings them up with RF simulators with the commands:</p>
+</li>
+</ol>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code><span class="token function">sudo</span> ./nr-softmodem <span class="token parameter variable">-O</span> <span class="token punctuation">..</span>/<span class="token punctuation">..</span>/<span class="token punctuation">..</span>/targets/PROJECTS/GENERIC-NR-5GC/CONF/gnb.sa.band78.fr1.106PRB.usrpb210.conf --gNBs.<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span>.min_rxtxtime <span class="token number">6</span> <span class="token parameter variable">--rfsim</span> <span class="token parameter variable">--sa</span>
+<span class="token function">sudo</span> ./nr-uesoftmodem <span class="token parameter variable">-r</span> <span class="token number">106</span> <span class="token parameter variable">--numerology</span> <span class="token number">1</span> <span class="token parameter variable">--band</span> <span class="token number">78</span> <span class="token parameter variable">-C</span> <span class="token number">3619200000</span> <span class="token parameter variable">--ssb</span> <span class="token number">516</span> <span class="token parameter variable">--rfsim</span> <span class="token parameter variable">--sa</span>
+</code></pre><p>One can verify that the both the gnb and the UE have been connected to the core network from the AMF log:<br>
+<img src="assets\%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202024-06-19%20105542.png" alt="屏幕截图 2024-06-19 105542"></p>
+<p>One can also check that in the configuration, the e2 agent information has already been incorporated into gnb configuration file.</p>
+<p><img src="assets\%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202024-06-19%20110110.png" alt="屏幕截图 2024-06-19 110110"></p>
+<ol start="3">
+<li>Brings up the Flexric and xapp following the guide at <a href="https://gitlab.eurecom.fr/oai/openairinterface5g/-/blob/develop/openair2/E2AP/README.md">https://gitlab.eurecom.fr/oai/openairinterface5g/-/blob/develop/openair2/E2AP/README.md</a><br>
+with the commands:</li>
+</ol>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code><span class="token comment"># brings up flexric first </span>
+<span class="token builtin class-name">cd</span> flexric
+./build/examples/xApp/c/monitor/xapp_kpm_moni
+<span class="token comment"># brings up xapp</span>
+./build/examples/xApp/c/monitor/xapp_rc_moni
+</code></pre><p>the flexric still crashed immediately<br>
+<img src="assets\%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202024-06-19%20110437.png" alt="屏幕截图 2024-06-19 110437"></p>
+
+      </div>
+      
+      
+    
+    
+    
+    
+    
+    
+  
+    </body></html>
