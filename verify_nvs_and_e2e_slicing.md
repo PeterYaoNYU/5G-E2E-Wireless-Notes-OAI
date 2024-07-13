@@ -1127,3 +1127,82 @@ ue 2 will ues slice2 upf and network oai.ipv4: 12.1.1.64/26
 These are separate network IP ranges. 
 COnfig the UE uicc0 info accordingly, and run experiment: 
 
+
+---
+I want to furtheer verify that they go through different UPFs, with wireshark. 
+
+I ping the first UE and UE2 in turn. And capture the ICMP packets:
+
+```
+PeterYao@node:~$ tshark -T fields -e frame.number -e _ws.col.Source -e _ws.col.Destination -e eth.src -e eth.dst -e _ws.col.Protocol -e ip.len  -e _ws.col.Info -r ~/ue1-ext-dn.pcap 'icmp'
+630     192.168.70.135  12.1.1.130      02:42:c0:a8:46:87       02:42:c0:a8:46:86       ICMP    84       Echo (ping) request  id=0x6fba, seq=1/256, ttl=64
+631     192.168.70.135  12.1.1.130      02:42:c0:a8:46:86       02:42:b2:72:b1:b7       GTP <ICMP>       128,84  Echo (ping) request  id=0x6fba, seq=1/256, ttl=63
+632     12.1.1.130      192.168.70.135  02:42:b2:72:b1:b7       02:42:c0:a8:46:86       GTP <ICMP>       128,84  Echo (ping) reply    id=0x6fba, seq=1/256, ttl=64 (request in 631)
+633     12.1.1.130      192.168.70.135  02:42:c0:a8:46:86       02:42:c0:a8:46:87       ICMP    84       Echo (ping) reply    id=0x6fba, seq=1/256, ttl=63 (request in 630)
+PeterYao@node:~$ tshark -T fields -e frame.number -e _ws.col.Source -e _ws.col.Destination -e eth.src -e eth.dst -e _ws.col.Protocol -e ip.len  -e _ws.col.Info -r ~/ue2-ext-dn.pcap 'icmp'
+126     192.168.70.135  12.1.1.66       02:42:c0:a8:46:87       02:42:c0:a8:46:8c       ICMP    84       Echo (ping) request  id=0x0d60, seq=1/256, ttl=64
+127     192.168.70.135  12.1.1.66       02:42:c0:a8:46:8c       02:42:b2:72:b1:b7       GTP <ICMP>       128,84  Echo (ping) request  id=0x0d60, seq=1/256, ttl=63
+128     12.1.1.66       192.168.70.135  02:42:b2:72:b1:b7       02:42:c0:a8:46:8c       GTP <ICMP>       128,84  Echo (ping) reply    id=0x0d60, seq=1/256, ttl=64 (request in 127)
+129     12.1.1.66       192.168.70.135  02:42:c0:a8:46:8c       02:42:c0:a8:46:87       ICMP    84       Echo (ping) reply    id=0x0d60, seq=1/256, ttl=63 (request in 126)
+```
+
+
+The MAC of the ext-dn is:
+```
+PeterYao@node:~$ sudo docker exec -it oai-ext-dn ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+737: eth0@if738: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default
+    link/ether 02:42:c0:a8:46:87 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet 192.168.70.135/26 brd 192.168.70.191 scope global eth0
+       valid_lft forever preferred_lft forever
+```
+
+MAC of UPF slice 1 is :
+```
+PeterYao@node:~$ sudo docker exec -it oai-upf-slice1 ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+2: tun0: <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 500
+    link/none
+    inet 12.1.1.129/25 scope global tun0
+       valid_lft forever preferred_lft forever
+759: eth0@if760: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default
+    link/ether 02:42:c0:a8:46:86 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet 192.168.70.134/26 brd 192.168.70.191 scope global eth0
+       valid_lft forever preferred_lft forever
+```
+
+MAC of UPF slice 2 is:
+```
+PeterYao@node:~$ sudo docker exec -it oai-upf-slice2 ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+2: tun0: <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 500
+    link/none
+    inet 12.1.1.129/25 scope global tun0
+       valid_lft forever preferred_lft forever
+757: eth0@if758: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default
+    link/ether 02:42:c0:a8:46:8c brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet 192.168.70.140/26 brd 192.168.70.191 scope global eth0
+       valid_lft forever preferred_lft forever
+```
+MAC of GNB is:
+```
+PeterYao@node:~$ ip addr list demo-oai
+736: demo-oai: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default
+    link/ether 02:42:b2:72:b1:b7 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.70.129/26 brd 192.168.70.191 scope global demo-oai
+       valid_lft forever preferred_lft forever
+    inet6 fe80::42:b2ff:fe72:b1b7/64 scope link
+       valid_lft forever preferred_lft forever
+```
+
+
+Traffic path verified!
