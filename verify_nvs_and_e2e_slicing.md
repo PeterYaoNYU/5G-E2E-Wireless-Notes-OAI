@@ -981,3 +981,149 @@ networks:
 ```
 
 Just add the nssf and assign it an address. When I attach the gnb and the UE, it can connect successfully to the AMF. But I fail to see ANY communication between the AMF and the NSSF when I attach the UE. Is it because that there is only one smf, and there is really no choice? Or is it because that the nssf is not correctly configured? 
+
+I am very excited. Several things are apparently going on, in my direction. Pretty exciting progress.  
+
+First of all, let's talk about what we have changed so far about the configuration. 
+
+1. Previously, I forgot to configure the SBI interfaces of the nssf nf. So now I add the following to basic_nrf_config.yaml. This is a huge mistake, because the nssf will not know about which port to use for its REST interface. So now I add the following lines to the file /mydata/oai-cn5g-fed/docker-compose/conf/basic_nrf_config.yaml, in the SBI section. 
+```
+  nssf:
+    host: oai-nssf
+    sbi:
+      port: 8080
+      api_version: v1
+      interface_name: eth0
+```
+
+2. in the AMF section, we need to enable nssf NF. Otherwise, AMF will not make an attempt to connect to it. (in the same file)
+```
+############## NF-specific configuration
+amf:
+  amf_name: "OAI-AMF"
+  # This really depends on if we want to keep the "mini" version or not
+  support_features_options:
+    enable_simple_scenario: no # "no" by default with the normal deployment scenarios with AMF/SMF/UPF/AUSF/UDM/UDR/NRF.
+                               # set it to "yes" to use with the minimalist deployment scenario (including only AMF/SMF/UPF) by using the internal AUSF/UDM implemented inside AMF.
+                               # There's no NRF in this scenario, SMF info is taken from "nfs" section.
+    enable_nssf: yes
+    enable_smf_selection: yes
+```
+Now I can see the amf and nssf communicate when a new UE is being attached to the network. 
+
+3. We also want to add nssf connfiguration to the same file, so that nssf knows where to look for NSSF specific configurations. 
+
+```
+nssf:
+  slice_config_path: /openair-nssf/etc/nssf_slice_config.yaml
+```
+
+4. I tweak the nssai information at the same file basic_nrf_config.yaml, and found that only when the nssai of this configuration and the nssai of the plmn in the gnb.conf matches up can the gnb connect to the core network. otherwise, the amf will not allow the connection of the gnb:
+
+When I first change to the following (from sst 1 sd 1 to sst 1 sd 5):
+```
+## general single_nssai configuration
+## Defines YAML anchors, which are reused in the config file
+snssais:
+  - &embb_slice1
+    sst: 1
+  - &embb_slice2
+    sst: 1
+    sd: 000005 # in hex
+  - &custom_slice
+    sst: 222
+    sd: 00007B # in hex
+```
+the gnb cannot connect to the core network. However, when I changed the gnb conf as well to the following, the gnb can again successfully connect to the core. Basically I just add the sst 1 sd 5 to the file. 
+
+```
+    plmn_list = ({
+                  mcc = 208;
+                  mnc = 95;
+                  mnc_length = 2;
+                  snssaiList = (
+                    {
+                      sst = 1;
+                      sd  = 0x1; // 0 false, else true
+                    },
+                    {
+                      sst = 1;
+                      sd  = 0x112233; // 0 false, else true
+                    },
+                    {
+                      sst = 1;
+                      sd  = 0x5;
+                    }
+                  );
+
+                  });
+```
+
+4. I also found that the sst and sd information in the ue configutaiton of uicc0 is not completely useless. It is provided to the nssf nf for slice selection. But right now, I assume that because the nssf has not been configured correctly, the NAS message returned to the UE says that the slice 
+
+Now the nssf is configured correctly, but the UE never received the NAS response. 
+
+```
+[NAS]   [UE 0] Received NAS_CONN_ESTABLI_CNF: errCode 1, length 102
+```
+
+My suspicion is that the smf does not get the message. Because the last NAS message was related to pdu session establishment:
+
+
+```
+[NAS]   Send NAS_UPLINK_DATA_REQ message(RegistrationComplete)
+mac e9 39 67 db
+[NAS]   Send NAS_UPLINK_DATA_REQ message(PduSessionEstablishRequest)
+```
+
+So I set the use nssf to No, and I can now correctly connect to the SMF. I think that we do not need the nssf. Just put the smf and the corresponding upf in the same configuration file, and the amd should be able to tell which smf to send to (I hope), and I can already see from the log of UPF that SMF is a peering NF with UPF, so it should not need to go through to NRF to fetch. And SMF is a peering NF for UPF (seen from the log), and SMF also has s UPF list configured. And we see such examples of 1 NRF and 2 SMF for 2 slices. 
+
+I cannot wait to try it out. 
+
+Setting nrf registration to no to try, because each smf is getting the right PDU request from the right UE, but a single UPF is handling all connections. Might be NRF's fault 
+
+changing the SBI name in the conf file seems to result in unhealthy containers. 
+
+Solution: separating config into 3 files: 1 just for amf and ausf and all the shared stuff, 1 for the common nrf and the specific SMF and UPF, and another again the NRF, UPF and SMF, for a different slice (the nrf is shared, we do not need a second nrf, as I omit the nssf here, there is no need for a nssf, and adding nssf somehow leads to errors, but that may also because of the fact that I did not spend much time on nssf)
+
+### Problem:
+why when connected to the same extdn, they began to share the same ip address the 2 UEs. 
+
+One approach might to tweak the database file to add subscription data for PDU and to add to those entries a static ip address.
+
+Change oai_db2.sql: 
+```sql
+INSERT INTO `SessionManagementSubscriptionData` (`ueid`, `servingPlmnid`, `singleNssai`, `dnnConfigurations`) VALUES 
+('208950000000031', '20895', '{\"sst\": 1, \"sd\": \"1\"}','{\"default\":{\"pduSessionTypes\":{ \"defaultSessionType\": \"IPV4\"},\"sscModes\": {\"defaultSscMode\": \"SSC_MODE_1\"},\"5gQosProfile\": {\"5qi\": 6,\"arp\":{\"priorityLevel\": 1,\"preemptCap\": \"NOT_PREEMPT\",\"preemptVuln\":\"NOT_PREEMPTABLE\"},\"priorityLevel\":1},\"sessionAmbr\":{\"uplink\":\"100Mbps\", \"downlink\":\"100Mbps\"},\"staticIpAddress\":[{\"ipv4Addr\": \"12.1.1.70\"}]}}');
+
+INSERT INTO `SessionManagementSubscriptionData` (`ueid`, `servingPlmnid`, `singleNssai`, `dnnConfigurations`) VALUES 
+('208950000000032', '20895', '{\"sst\": 1, \"sd\": \"5\"}','{\"default\":{\"pduSessionTypes\":{ \"defaultSessionType\": \"IPV4\"},\"sscModes\": {\"defaultSscMode\": \"SSC_MODE_1\"},\"5gQosProfile\": {\"5qi\": 6,\"arp\":{\"priorityLevel\": 1,\"preemptCap\": \"NOT_PREEMPT\",\"preemptVuln\":\"NOT_PREEMPTABLE\"},\"priorityLevel\":1},\"sessionAmbr\":{\"uplink\":\"100Mbps\", \"downlink\":\"100Mbps\"},\"staticIpAddress\":[{\"ipv4Addr\": \"12.1.1.71\"}]}}');
+```
+
+This does not seem to be working. The address is not allocated as statically as I wished. 
+
+---
+### NAT translation issue:
+Be aware of this configuration of the ext dn. This may have an impact on the later parts of this experiment: 
+
+```
+ "iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE;"\
+```
+
+We do not want all packets going out of this interface to be masked with the same IP address. We then cannot differentiate and isolate them apart. So be aware. 
+
+---
+
+back to the same ip issue: 
+change the routing of extdn:
+```
+        entrypoint: /bin/bash -c \
+              "ip route add 12.1.1.128/25 via 192.168.70.134 dev eth0;"\
+              "ip route add 12.1.1.64/26 via 192.168.70.140 dev eth0; ip route; sleep infinity"
+```
+UE1 will use slice 1 upf and network oai: 12.1.1.128/25
+ue 2 will ues slice2 upf and network oai.ipv4: 12.1.1.64/26
+
+These are separate network IP ranges. 
+COnfig the UE uicc0 info accordingly, and run experiment: 
+
