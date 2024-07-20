@@ -1,82 +1,3 @@
-### Single UE Single gnb, gnb and core and UE on the same node:
-```
-root@9eb4b2776f02:/tmp# iperf3 -c 12.1.1.130 -t 60
-Connecting to host 12.1.1.130, port 5201
-[  5] local 192.168.70.135 port 33538 connected to 12.1.1.130 port 5201
-[ ID] Interval           Transfer     Bitrate         Retr  Cwnd
-[  5]   0.00-1.00   sec  1.83 MBytes  15.3 Mbits/sec    0    260 KBytes
-[  5]   1.00-2.00   sec  1.86 MBytes  15.6 Mbits/sec    0    325 KBytes
-[  5]   2.00-3.00   sec  1.55 MBytes  13.0 Mbits/sec    0    400 KBytes
-[  5]   3.00-4.00   sec  1.80 MBytes  15.1 Mbits/sec    0    501 KBytes
-[  5]   4.00-5.00   sec  3.29 MBytes  27.6 Mbits/sec    0    622 KBytes
-[  5]   5.00-6.00   sec  2.50 MBytes  21.0 Mbits/sec    0    762 KBytes
-[  5]   6.00-7.00   sec  3.75 MBytes  31.5 Mbits/sec    0    912 KBytes
-[  5]   7.00-8.00   sec  2.50 MBytes  21.0 Mbits/sec    0   1.04 MBytes
-[  5]   8.00-9.00   sec  2.50 MBytes  21.0 Mbits/sec    0   1.18 MBytes
-[  5]   9.00-10.00  sec  2.50 MBytes  21.0 Mbits/sec    0   1.32 MBytes
-[  5]  10.00-11.00  sec  3.75 MBytes  31.5 Mbits/sec    0   1.47 MBytes
-[  5]  11.00-12.00  sec  2.50 MBytes  21.0 Mbits/sec    0   1.61 MBytes
-[  5]  12.00-13.00  sec  2.50 MBytes  21.0 Mbits/sec    0   1.76 MBytes
-[  5]  13.00-14.00  sec  3.75 MBytes  31.5 Mbits/sec    0   1.91 MBytes
-[  5]  14.00-15.00  sec  2.50 MBytes  21.0 Mbits/sec    0   2.05 MBytes
-[  5]  15.00-16.00  sec  2.47 MBytes  20.7 Mbits/sec    0   2.20 MBytes
-[  5]  16.00-17.00  sec  3.51 MBytes  29.5 Mbits/sec    0   2.39 MBytes
-[  5]  17.00-18.00  sec  3.26 MBytes  27.3 Mbits/sec    1   2.75 MBytes
-[  5]  18.00-19.00  sec  2.27 MBytes  19.0 Mbits/sec    0   2.75 MBytes
-[  5]  19.00-20.00  sec  3.19 MBytes  26.7 Mbits/sec    0   2.76 MBytes
-[  5]  20.00-21.00  sec  3.46 MBytes  29.0 Mbits/sec    0   2.76 MBytes
-[  5]  21.00-22.00  sec  2.03 MBytes  17.0 Mbits/sec    0   2.78 MBytes
-[  5]  22.00-23.00  sec  3.43 MBytes  28.7 Mbits/sec    0   2.80 MBytes
-[  5]  23.00-24.00  sec  2.50 MBytes  21.0 Mbits/sec   14   1.96 MBytes
-[  5]  24.00-25.00  sec  2.48 MBytes  20.8 Mbits/sec  426   1.39 MBytes
-[  5]  25.00-26.00  sec  3.75 MBytes  31.5 Mbits/sec    0   1.45 MBytes
-[  5]  26.00-27.00  sec  2.50 MBytes  21.0 Mbits/sec    0   1.52 MBytes
-[  5]  27.00-28.00  sec  3.75 MBytes  31.5 Mbits/sec    0   1.59 MBytes
-[  5]  28.00-29.00  sec  2.50 MBytes  21.0 Mbits/sec    0   1.63 MBytes
-[  5]  29.00-30.00  sec  2.50 MBytes  21.0 Mbits/sec    0   1.66 MBytes
-[  5]  30.00-31.00  sec  3.75 MBytes  31.5 Mbits/sec    0   1.68 MBytes
-[  5]  31.00-32.00  sec  2.50 MBytes  21.0 Mbits/sec    0   1.69 MBytes
-[  5]  32.00-33.00  sec  2.50 MBytes  21.0 Mbits/sec    0   1.69 MBytes
-[  5]  33.00-34.00  sec  3.75 MBytes  31.5 Mbits/sec    0   1.69 MBytes
-[  5]  34.00-35.00  sec  2.50 MBytes  21.0 Mbits/sec    0   1.69 MBytes
-[  5]  35.00-36.00  sec  2.50 MBytes  21.0 Mbits/sec    0   1.70 MBytes
-[  5]  36.00-37.00  sec  2.50 MBytes  21.0 Mbits/sec    4   1.70 MBytes
-[  5]  37.00-38.00  sec  2.50 MBytes  21.0 Mbits/sec    0   1.70 MBytes
-[  5]  38.00-39.00  sec  2.50 MBytes  21.0 Mbits/sec    0   1.71 MBytes
-[  5]  39.00-40.00  sec  2.50 MBytes  21.0 Mbits/sec    0   1.72 MBytes
-[  5]  40.00-41.00  sec  3.75 MBytes  31.5 Mbits/sec    0   1.73 MBytes
-[  5]  41.00-42.00  sec  2.50 MBytes  21.0 Mbits/sec    0   1.76 MBytes
-[  5]  42.00-43.00  sec  2.50 MBytes  21.0 Mbits/sec    0   1.81 MBytes
-[  5]  43.00-44.00  sec  3.75 MBytes  31.5 Mbits/sec    0   1.87 MBytes
-[  5]  44.00-45.00  sec  2.50 MBytes  21.0 Mbits/sec    0   1.95 MBytes
-[  5]  45.00-46.00  sec  2.50 MBytes  21.0 Mbits/sec    0   2.06 MBytes
-[  5]  46.00-47.00  sec  3.72 MBytes  31.2 Mbits/sec    0   2.19 MBytes
-[  5]  47.00-48.00  sec  2.35 MBytes  19.7 Mbits/sec    0   2.33 MBytes
-[  5]  48.00-49.00  sec  3.28 MBytes  27.5 Mbits/sec    0   2.53 MBytes
-[  5]  49.00-50.00  sec  3.40 MBytes  28.5 Mbits/sec    0   2.76 MBytes
-[  5]  50.00-51.00  sec  1.14 MBytes  9.52 Mbits/sec   65   1.24 MBytes
-[  5]  51.00-52.00  sec  3.69 MBytes  30.9 Mbits/sec    0   2.05 MBytes
-[  5]  52.00-53.00  sec  2.50 MBytes  21.0 Mbits/sec  163   1.45 MBytes
-[  5]  53.00-54.00  sec  3.75 MBytes  31.5 Mbits/sec    0   1.52 MBytes
-[  5]  54.00-55.00  sec  2.50 MBytes  21.0 Mbits/sec    0   1.59 MBytes
-[  5]  55.00-56.00  sec  3.75 MBytes  31.5 Mbits/sec    0   1.65 MBytes
-[  5]  56.00-57.00  sec  2.50 MBytes  21.0 Mbits/sec    0   1.70 MBytes
-[  5]  57.00-58.00  sec  2.50 MBytes  21.0 Mbits/sec    0   1.73 MBytes
-[  5]  58.00-59.00  sec  2.50 MBytes  21.0 Mbits/sec    0   1.74 MBytes
-[  5]  59.00-60.00  sec  3.75 MBytes  31.5 Mbits/sec    0   1.75 MBytes
-- - - - - - - - - - - - - - - - - - - - - - - - -
-[ ID] Interval           Transfer     Bitrate         Retr
-[  5]   0.00-60.00  sec   169 MBytes  23.6 Mbits/sec  673
-sender
-[  5]   0.00-60.00  sec   168 MBytes  23.5 Mbits/sec
-receiver
-
-iperf Done.
-```
-Running the experiment for 60 seconds, the thp stablized to 23.5Mbits/sec.
-
-### Core Separate from gnb and UE. 
-
 Separating the core network from the gnb into different machines can be a minor challenge. 
 
 Some resources that you may need:
@@ -217,6 +138,5 @@ Connecting to host 12.1.1.131, port 5201
 [  4]   0.00-60.00  sec   167 MBytes  23.3 Mbits/sec                  receiver
 
 iperf Done.
+root@29b9bec80e0f:/tmp#
 ```
-
-It does not seem to make a difference. 

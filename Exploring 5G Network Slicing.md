@@ -1,11 +1,22 @@
 # Exploring the 5G Network Slicing
 
-Yuncheng Yao (Peter) @aarushi If there is a mistake or uncalrity, let me know: yy4108@nyu.edu
+Yuncheng Yao (Peter) 
 
+## Main Learning Objectives:
 In this experiment, you will epxlore the 5G network slicing. You will learn:
-1. How to use FlexRIC to set up and configure RAN network slices
-2. How to configure the core network in ways that make different slices use different data pathways
-3. A much deeper understanding of how the RAN and Core network operates. 
+1. How a 5G network can be sliced in both core and RAN, so that different service levels can be provided to different users, using the same physical wireless resources. 
+
+## Background
+To help you proceed with a good understanding of what you are doing, I will first wal you through several important concepts. 
+
+### O-RAN
+O-RAN is an initiative to standardize and open up the interfaces and architecture of the RAN component of mobile networks. Traditionally, RAN systems have been proprietary, meaning that equipment from one vendor often couldn’t interoperate with equipment from another. O-RAN seeks to change this by defining open and standardized interfaces. It is bringing the same revolution to RAN that SDN brings to data-ceneter netorking: interoperability between different vendor's products.
+
+### RIC (RAN Intelligent Controller)
+RIC stands for RAN Intelligent Controller. It is a key component in the Open RAN (O-RAN) architecture, aimed at enhancing the management and optimization of the Radio Access Network (RAN). It can give near real-time instructions and policy changes to the base station.
+
+### xAPP (external applications)
+An xApp is an additional process that runs on the RAN Intelligent Controller (RIC) within an O-RAN architecture. xApps are designed to provide specific functionalities for managing and optimizing the Radio Access Network (RAN).
 
 To understand, you should read the [Explore RAN](https://witestlab.poly.edu/blog/exploring-the-5g-ran/) and [Explore Core](https://witestlab.poly.edu/blog/exploring-the-5g-core-network/) passages, and understand the functionality of different Network Functions(NFs) in the core, as well as some basic concepts in RAN (e.g. What is a gNB, UE...). You willneed to have a basic understanding of O-RAN, esp the RIC part and xAPP. The original [FlexRIC paper](https://dl.acm.org/doi/10.1145/3485983.3494870) will be a good starting point. 
 
@@ -698,6 +709,7 @@ Repeat those verification steps on your own machine (the second appraoch), and s
 ### Final step for end-to-end slicing
 First do the core slicing, then bring in the xapp to enforce slicing. Then you will have slicing at both the RAN MAC layer and the core layer. 
 
-
+## References:
+[1] Robert Schmidt, Mikel Irazabal, and Navid Nikaein. 2021. FlexRIC: an SDK for next-generation SD-RANs. In Proceedings of the 17th International Conference on emerging Networking EXperiments and Technologies (CoNEXT '21). Association for Computing Machinery, New York, NY, USA, 411–425. https://doi.org/10.1145/3485983.3494870
 
 
