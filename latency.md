@@ -2,7 +2,7 @@ I am investigating how to imporce the e2e latency here.
 We have verified that separating the core from the gnb and the UE does not help with the throughput. 
 
 TODO:
-- [ ] paired radio cable
+- [x] paired radio cable
 - [x] OTA experiment
 - [ ] use VNC to verify modulation and noise. 
 - [ ] docker container. 
@@ -20,6 +20,8 @@ It remains to be verified what is the cause:
 - [ ] We could also build the image ourselves, and see if we can reproduce the latency. 
 
 - [x] Does it actually go through the UPF?
+
+- [ ] Or maybe it is because of the UE configuration?
 
 
 #### We could run an iperf test and check if the throughput shows the same thing. 
@@ -244,6 +246,61 @@ PeterYao@node:~/.cache$ sudo docker network inspect demo-oai-public-net
     }
 ]
 ```
+
+
+### Is it because of the gnb configuration and/or the UE configuration. 
+
+I first copy down the gnbconfiguration from the docker container to the host, and then change the necessary info like slicing, amf address, and network binding. 
+
+Then I get the following latency data with the original nondocker UE with old UE conf and the non docker gnb with the docker gnb conf. 
+
+```
+PeterYao@node:~$ sudo docker exec -it oai-ext-dn ping -c 20 12.1.1.130
+PING 12.1.1.130 (12.1.1.130) 56(84) bytes of data.
+64 bytes from 12.1.1.130: icmp_seq=1 ttl=63 time=36.5 ms
+64 bytes from 12.1.1.130: icmp_seq=2 ttl=63 time=24.9 ms
+64 bytes from 12.1.1.130: icmp_seq=3 ttl=63 time=18.9 ms
+64 bytes from 12.1.1.130: icmp_seq=4 ttl=63 time=45.9 ms
+64 bytes from 12.1.1.130: icmp_seq=5 ttl=63 time=32.2 ms
+64 bytes from 12.1.1.130: icmp_seq=6 ttl=63 time=23.0 ms
+64 bytes from 12.1.1.130: icmp_seq=7 ttl=63 time=19.2 ms
+64 bytes from 12.1.1.130: icmp_seq=8 ttl=63 time=34.5 ms
+64 bytes from 12.1.1.130: icmp_seq=9 ttl=63 time=23.3 ms
+64 bytes from 12.1.1.130: icmp_seq=10 ttl=63 time=43.4 ms
+64 bytes from 12.1.1.130: icmp_seq=11 ttl=63 time=33.7 ms
+64 bytes from 12.1.1.130: icmp_seq=12 ttl=63 time=30.6 ms
+64 bytes from 12.1.1.130: icmp_seq=13 ttl=63 time=21.9 ms
+64 bytes from 12.1.1.130: icmp_seq=14 ttl=63 time=42.2 ms
+64 bytes from 12.1.1.130: icmp_seq=15 ttl=63 time=26.7 ms
+64 bytes from 12.1.1.130: icmp_seq=16 ttl=63 time=43.6 ms
+64 bytes from 12.1.1.130: icmp_seq=17 ttl=63 time=39.5 ms
+64 bytes from 12.1.1.130: icmp_seq=18 ttl=63 time=22.7 ms
+64 bytes from 12.1.1.130: icmp_seq=19 ttl=63 time=46.2 ms
+64 bytes from 12.1.1.130: icmp_seq=20 ttl=63 time=34.9 ms
+
+--- 12.1.1.130 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 19029ms
+rtt min/avg/max/mdev = 18.855/32.187/46.157/8.997 ms
+```
+
+The average latency used to be 86ms, and now it is 32 ms!
+
+I need to compare the 2 conf to figure out the cause of this drop in latency. But this is a magical configuration. 
+
+In terms of thp, I did not see much of an imporve:
+```
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-120.00 sec   337 MBytes  23.6 Mbits/sec  4462
+ sender
+[  5]   0.00-120.00 sec   336 MBytes  23.5 Mbits/sec
+receiver
+
+iperf Done.
+```
+I ran for 2 minutes with rfsimulation. 
+
+### Change the UE configuration. 
+
 
 
 

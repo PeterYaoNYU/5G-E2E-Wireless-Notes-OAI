@@ -13,12 +13,33 @@ To help you proceed with a good understanding of what you are doing, I will firs
 O-RAN is an initiative to standardize and open up the interfaces and architecture of the RAN component of mobile networks. Traditionally, RAN systems have been proprietary, meaning that equipment from one vendor often couldn’t interoperate with equipment from another. O-RAN seeks to change this by defining open and standardized interfaces. It is bringing the same revolution to RAN that SDN brings to data-ceneter netorking: interoperability between different vendor's products.
 
 ### RIC (RAN Intelligent Controller)
-RIC stands for RAN Intelligent Controller. It is a key component in the Open RAN (O-RAN) architecture, aimed at enhancing the management and optimization of the Radio Access Network (RAN). It can give near real-time instructions and policy changes to the base station.
+RIC stands for RAN Intelligent Controller. It is a key component in the Open RAN (O-RAN) architecture, aimed at enhancing the management and optimization of the Radio Access Network (RAN). It can give near real-time instructions and policy changes to the base station. [1]
 
 ### xAPP (external applications)
 An xApp is an additional process that runs on the RAN Intelligent Controller (RIC) within an O-RAN architecture. xApps are designed to provide specific functionalities for managing and optimizing the Radio Access Network (RAN).
 
-To understand, you should read the [Explore RAN](https://witestlab.poly.edu/blog/exploring-the-5g-ran/) and [Explore Core](https://witestlab.poly.edu/blog/exploring-the-5g-core-network/) passages, and understand the functionality of different Network Functions(NFs) in the core, as well as some basic concepts in RAN (e.g. What is a gNB, UE...). You willneed to have a basic understanding of O-RAN, esp the RIC part and xAPP. The original [FlexRIC paper](https://dl.acm.org/doi/10.1145/3485983.3494870) will be a good starting point. 
+### RAN Slicing 
+Slcing the RAN is about allocating physical resource blocks to different slices. Its aim is to provide divese service atop a single physical infrastructure. 
+
+### NVS Inter-Slice Scheduling
+The MAC level scheduler that we will use for RAN slicing is NVS [2]. It was proposed originally for Wifi scheduling, but is also applpicable to cellular network. The basic idea is to allocate different time slot completely to different users, as illustrated in the picture below. 
+
+With NVS, we are using a 2-level scheduling. On the first slice level, we use NVS to decide which slice should get the PRB(physical resource blocks) at this time interval. And then specific enterprise algorithms is used to do the intra-slice scheduling. 
+
+![屏幕截图 2024-07-21 175410](/assets/屏幕截图%202024-07-21%20175410.png)
+
+Other MAC slice scheduling algorithms include: static slicing, which always allocate certain PRBs to a certain slice; EDF, which defines a deadline for all slices during which they need to be guaranteed a certain number of RBs.
+
+
+### Core slicing
+We extend the RAN slicing to core network. We focus on the case of 2 different UEs connected to the same gNB, and they go through different UPFs in the core network, which then go to different first hop interface. 
+
+### Other Prerequisites
+
+
+To understand the material comprehensively, before proceeding, you should read the [Explore RAN](https://witestlab.poly.edu/blog/exploring-the-5g-ran/) and [Explore Core](https://witestlab.poly.edu/blog/exploring-the-5g-core-network/) passages, and understand the functionality of different Network Functions(NFs) in the core, as well as some basic concepts in RAN (e.g. What is a gNB, UE...).
+
+## Reserve a Bare Metal Server on POWDER
 
 
 We run our experiemnts on POWDER Testbed. For this experiment, you will need one d430-type server on the Emulab cluster. Since you are reserving an entire bare-metal server, you should:
@@ -27,29 +48,29 @@ We run our experiemnts on POWDER Testbed. For this experiment, you will need one
 + reserve a d430 server for that time at least a few days in advance
 + and during your reserved time, complete the entire lab assignment in one sitting.
 
+Please make the reservation [here on POWDER](https://www.powderwireless.net/resgroup.php). The cluster is Emulab, and you will need 1 d430 machine. Please leavel frequency blank, as that are for OTA experiemnts. 
 
-### Instantiate a Profile
-Instantiate this profile, as it has most of the software that we would probably need already installed. 
 
-https://www.powderwireless.net/p/244cecf4e88b119a16e5fb7d3fa5bf0a91a571a2
+## Instantiate a Profile
+
+
+Instantiate this profile when the reservation time comes, as it has most of the software that we would probably need already installed. 
+
+https://www.powderwireless.net/instantiate.php?profile=ffcb4ebd-47b1-11ef-9f39-e4434b2381fc
 
 In the default setting, you will not have enough storage allocated on the Emulab cluster. The default 16G storage is not enoguh. You need to mount a new file system, and download and install everything in that folder.
 
 ```bash
-# check how much space has been mounted
-df -h
-# allocate space during the experiment
 cd /
 sudo mkdir mydata
 sudo /usr/local/etc/emulab/mkextrafs.pl /mydata
-# check space usage again
-df -h
 
 # change the ownership of this new space
-sudo chown PeterYao:nyunetworks mydata
+username=$(whoami)
+groupname=$(id -gn)
 
+sudo chown $username:$groupname mydata
 chmod 775 mydata
-
 # verify the result
 ls -ld mydata
 ```
@@ -60,19 +81,19 @@ You should see something like this
 drwxrwxr-x 4 PeterYao nyunetworks 4096 Jun 18 14:55 mydata
 ```
 
-You will need to clone a more recent OpenAirInterface RAN reposotory, as the older version does not have support for E2AP interface, which is necessary for communication between the flexric and the gnb. 
+But with your own username and groupname.
 
-### Install the prerequisites
+### Install the build prerequisites
 To compile the OAI RAN, we need newer versions of cmake and gcc. 
 
 You would want to have at least GCC-9. The current version of GCC 7 on the cloudlab profile is just way too old to compile the flexric and OAI. Follow the instructions below:
 
 ```bash
 # Add the ubuntu-toolchain-r PPA:
-sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
 sudo apt-get update
 # install actually
-sudo apt-get install gcc-9 g++-9
+sudo apt-get install -y gcc-9 g++-9
 # set the new version as the default
 sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-9
 sudo update-alternatives --config gcc
@@ -80,6 +101,14 @@ sudo update-alternatives --config gcc
 gcc --version
 ```
 
+And you should see the following output:
+```
+PeterYao@node:~$ gcc --version
+gcc (Ubuntu 9.4.0-1ubuntu1~18.04) 9.4.0
+Copyright (C) 2019 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+```
 
 You need newer cmake, since OAI is updating on a daily basis:
 ```bash
@@ -96,323 +125,97 @@ export PATH=/users/PeterYao/cmake-3.27.0/bin:$PATH
 cmake --version
 ```
 
+You should expect the following output. 
+
 You need to install the libpcre2-dev
 
 ```bash
 sudo apt-get install libpcre2-dev
 ```
 
-Add 
-```
-e2_agent = {
-  near_ric_ip_addr = "127.0.0.1";
-  sm_dir = "/usr/local/lib/flexric/";
-}
-```
-to the end of this file
-```
-/local/repository/etc/gnb.conf
-```
+### Install OAI
 
 Before we compile the OAI and flexric, first clone them, then checkout the right versions of it, so that they are at commit version where NVS and slicing are actually partially supported. 
 
 ```bash
 # you are at /mydata
-
+cd /mydata
 git clone https://gitlab.eurecom.fr/mosaic5g/flexric.git
 cd flexric/
 git checkout rc_slice_xapp
 
 # for oai, first git clone the latest version
+cd /mydata
 git clone https://gitlab.eurecom.fr/oai/openairinterface5g.git
 cd openairinterface5g
 git checkout rebased-5g-nvs-rc-rf
 cd cmake_targets
 ```
 
-***Optional***  And if you want to capture E2AP packets, i.e. the communication between gnb and flexric, you would need a newer version of tshark to analyze these packets:
+Inside the OAI repo, We are changing a function. This function is invoked when a slice is added to the base station, and it is associating existing UEs with newly added slices. The general rule is that the first UE is associated with the first slice, while the second UE with the second slice. The OAI support for slicing is partial and not out-of-the-box, so we need to adapt it to our own needs, which is to associate two UEs at one gNB to 2 different slices. 
 
-```
-  300  sudo apt-get remove --purge wireshark wireshark-common wireshark-dev tshark
-  301  sudo apt-get autoremove
-  302  which wireshark
-  303  which tshark
-  304  sudo apt-get remove --purge tshark
-  305  tshark -v
-  306  which tshark
-    313  sudo rm /usr/local/bin/tshark
-  314  which tshark
-```
-verify with which tshark, remove until there is nothing left.
+I have prepared the file in the folder upon instantiation of this experiment. You should copy to the folder path with the command. 
 
-Download the wireshark from gitlab, build with qt support (only install tshark then).
 ```bash
-sudo apt-get install libc-ares-dev
-sudo apt-get install libspeexdsp-dev
-sudo apt-get install asciidoctor xsltproc
-git clone https://gitlab.com/wireshark/wireshark.git
-cd wireshark
-git checkout master
-mkdir build
-cd build 
-cmake.. -DBUILD_wireshark=OFF
-make -j 8
-sudo make install 
-sudo ldconfig
-```
-
-verify the tshark version and the supported protocols:
-```
-export PATH=/usr/local/bin:$PATH
-tshark -v
-```
-```
-TShark (Wireshark) 4.3.0 (v4.3.0rc1-192-g3a00768fb421).
-
-Copyright 1998-2024 Gerald Combs <gerald@wireshark.org> and contributors.
-Licensed under the terms of the GNU General Public License (version 2 or later).
-This is free software; see the file named COPYING in the distribution. There is
-NO WARRANTY; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-Compiled (64-bit) using GCC 9.4.0, with GLib 2.56.4, with libpcap, with POSIX
-capabilities (Linux), without libnl, with zlib 1.2.11, without zlib-ng, with
-PCRE2, without Lua, with GnuTLS 3.5.18 and PKCS #11 support, with Gcrypt 1.8.1,
-without Kerberos, without MaxMind, without nghttp2, without nghttp3, without
-brotli, without LZ4, without Zstandard, without Snappy, with libxml2 2.9.4,
-without libsmi, with binary plugins.
-
-Running on Linux 4.15.0-159-generic, with Intel(R) Xeon(R) CPU E5-2630 v3 @
-2.40GHz (with SSE4.2), with 64326 MB of physical memory, with GLib 2.56.4, with
-libpcap 1.8.1, with zlib 1.2.11, with PCRE2 10.31 2018-02-12, with c-ares
-1.14.0, with GnuTLS 3.5.18, with Gcrypt 1.8.1, with LC_TYPE=en_US.UTF-8, binary
-plugins supported.
-```
-```
-PeterYao@node:/mydata/wireshark/build$ tshark -G protocols | grep e2ap
-E2 Application Protocol E2AP    e2ap    T       T       T
+cp /local/repository/etc/modified_oai_code/rc_ctrl_service_style_2.c /mydata/openairinterface5g/openair2/E2AP/RAN_FUNCTION/O-RAN/
 ```
 
 
-### Compile the Code
-
-Go inside the OAI repo, find the function with this name and replace it with the following code before compiling the whole OAI. This function is invoked when a slice is added to the base station, and it is associating existing UEs with newly added slices. The general rule is that the first UE is associated with the first slice, while the second UE with the second slice. The OAI support for slicing is partial and not out-of-the-box, so we need to adapt it to our own needs, which is to associate two UEs at one gNB to 2 different slices. 
-
-```c
-bool add_mod_rc_slice(int mod_id, size_t slices_len, ran_param_list_t* lst)
-{
-  gNB_MAC_INST *nrmac = RC.nrmac[mod_id];
-  assert(nrmac);
-
-  int current_algo = nrmac->pre_processor_dl.algorithm;
-  // use NVS algorithm by default
-  int new_algo = NVS_SLICING;
-
-  pthread_mutex_lock(&nrmac->UE_info.mutex);
-  if (current_algo != new_algo) {
-    set_new_dl_slice_algo(mod_id, new_algo);
-    current_algo = new_algo;
-    if (new_algo > 0)
-      LOG_D(NR_MAC, "set new algorithm %d\n", current_algo);
-    else
-      LOG_W(NR_MAC, "reset slicing algorithm as NONE\n");
-  }
-
-  for (size_t i = 0; i < slices_len; ++i) {
-    lst_ran_param_t* RRM_Policy_Ratio_Group = &lst->lst_ran_param[i];
-    //Bug in rc_enc_asn.c:1003, asn didn't define ran_param_id for lst_ran_param_t...
-    //assert(RRM_Policy_Ratio_Group->ran_param_id == RRM_Policy_Ratio_Group_8_4_3_6 && "wrong RRM_Policy_Ratio_Group id");
-    assert(RRM_Policy_Ratio_Group->ran_param_struct.sz_ran_param_struct == 4 && "wrong RRM_Policy_Ratio_Group->ran_param_struct.sz_ran_param_struct");
-    assert(RRM_Policy_Ratio_Group->ran_param_struct.ran_param_struct != NULL && "NULL RRM_Policy_Ratio_Group->ran_param_struct.ran_param_struct");
-
-    seq_ran_param_t* RRM_Policy = &RRM_Policy_Ratio_Group->ran_param_struct.ran_param_struct[0];
-    assert(RRM_Policy->ran_param_id == RRM_Policy_8_4_3_6 && "wrong RRM_Policy id");
-    assert(RRM_Policy->ran_param_val.type == STRUCTURE_RAN_PARAMETER_VAL_TYPE && "wrong RRM_Policy type");
-    assert(RRM_Policy->ran_param_val.strct != NULL && "NULL RRM_Policy->ran_param_val.strct");
-    assert(RRM_Policy->ran_param_val.strct->sz_ran_param_struct == 1 && "wrong RRM_Policy->ran_param_val.strct->sz_ran_param_struct");
-    assert(RRM_Policy->ran_param_val.strct->ran_param_struct != NULL && "NULL RRM_Policy->ran_param_val.strct->ran_param_struct");
-
-    seq_ran_param_t* RRM_Policy_Member_List = &RRM_Policy->ran_param_val.strct->ran_param_struct[0];
-    assert(RRM_Policy_Member_List->ran_param_id == RRM_Policy_Member_List_8_4_3_6 && "wrong RRM_Policy_Member_List id");
-    assert(RRM_Policy_Member_List->ran_param_val.type == LIST_RAN_PARAMETER_VAL_TYPE && "wrong RRM_Policy_Member_List type");
-    assert(RRM_Policy_Member_List->ran_param_val.lst != NULL && "NULL RRM_Policy_Member_List->ran_param_val.lst");
-    assert(RRM_Policy_Member_List->ran_param_val.lst->sz_lst_ran_param == 1 && "wrong RRM_Policy_Member_List->ran_param_val.lst->sz_lst_ran_param");
-    assert(RRM_Policy_Member_List->ran_param_val.lst->lst_ran_param != NULL && "NULL RRM_Policy_Member_List->ran_param_val.lst->lst_ran_param");
-
-    lst_ran_param_t* RRM_Policy_Member = &RRM_Policy_Member_List->ran_param_val.lst->lst_ran_param[0];
-    //Bug in rc_enc_asn.c:1003, asn didn't define ran_param_id for lst_ran_param_t ...
-    //assert(RRM_Policy_Member->ran_param_id == RRM_Policy_Member_8_4_3_6 && "wrong RRM_Policy_Member id");
-    assert(RRM_Policy_Member->ran_param_struct.sz_ran_param_struct == 2 && "wrong RRM_Policy_Member->ran_param_struct.sz_ran_param_struct");
-    assert(RRM_Policy_Member->ran_param_struct.ran_param_struct != NULL && "NULL RRM_Policy_Member->ran_param_struct.ran_param_struct");
-
-    seq_ran_param_t* PLMN_Identity = &RRM_Policy_Member->ran_param_struct.ran_param_struct[0];
-    assert(PLMN_Identity->ran_param_id == PLMN_Identity_8_4_3_6 && "wrong PLMN_Identity id");
-    assert(PLMN_Identity->ran_param_val.type == ELEMENT_KEY_FLAG_FALSE_RAN_PARAMETER_VAL_TYPE && "wrong PLMN_Identity type");
-    assert(PLMN_Identity->ran_param_val.flag_false != NULL && "NULL PLMN_Identity->ran_param_val.flag_false");
-    assert(PLMN_Identity->ran_param_val.flag_false->type == OCTET_STRING_RAN_PARAMETER_VALUE && "wrong PLMN_Identity->ran_param_val.flag_false->type");
-    ///// GET RC PLMN ////
-    char* plmn_str = cp_ba_to_str(PLMN_Identity->ran_param_val.flag_false->octet_str_ran);
-    int RC_mnc, RC_mcc = 0;
-    if (strlen(plmn_str) == 6)
-      sscanf(plmn_str, "%3d%2d", &RC_mcc, &RC_mnc);
-    else
-      sscanf(plmn_str, "%3d%3d", &RC_mcc, &RC_mnc);
-    LOG_D(NR_MAC, "RC PLMN %s, MCC %d, MNC %d\n", plmn_str, RC_mcc, RC_mnc);
-    free(plmn_str);
-
-    seq_ran_param_t* S_NSSAI = &RRM_Policy_Member->ran_param_struct.ran_param_struct[1];
-    assert(S_NSSAI->ran_param_id == S_NSSAI_8_4_3_6 && "wrong S_NSSAI id");
-    assert(S_NSSAI->ran_param_val.type == STRUCTURE_RAN_PARAMETER_VAL_TYPE && "wrong S_NSSAI type");
-    assert(S_NSSAI->ran_param_val.strct != NULL && "NULL S_NSSAI->ran_param_val.strct");
-    assert(S_NSSAI->ran_param_val.strct->sz_ran_param_struct == 2 && "wrong S_NSSAI->ran_param_val.strct->sz_ran_param_struct");
-    assert(S_NSSAI->ran_param_val.strct->ran_param_struct != NULL && "NULL S_NSSAI->ran_param_val.strct->ran_param_struct");
-
-    seq_ran_param_t* SST = &S_NSSAI->ran_param_val.strct->ran_param_struct[0];
-    assert(SST->ran_param_id == SST_8_4_3_6 && "wrong SST id");
-    assert(SST->ran_param_val.type == ELEMENT_KEY_FLAG_FALSE_RAN_PARAMETER_VAL_TYPE && "wrong SST type");
-    assert(SST->ran_param_val.flag_false != NULL && "NULL SST->ran_param_val.flag_false");
-    assert(SST->ran_param_val.flag_false->type == OCTET_STRING_RAN_PARAMETER_VALUE && "wrong SST->ran_param_val.flag_false type");
-    seq_ran_param_t* SD = &S_NSSAI->ran_param_val.strct->ran_param_struct[1];
-    assert(SD->ran_param_id == SD_8_4_3_6 && "wrong SD id");
-    assert(SD->ran_param_val.type == ELEMENT_KEY_FLAG_FALSE_RAN_PARAMETER_VAL_TYPE && "wrong SD type");
-    assert(SD->ran_param_val.flag_false != NULL && "NULL SD->ran_param_val.flag_false");
-    assert(SD->ran_param_val.flag_false->type == OCTET_STRING_RAN_PARAMETER_VALUE && "wrong SD->ran_param_val.flag_false type");
-    ///// GET RC NSSAI ////
-    char* rc_sst_str = cp_ba_to_str(SST->ran_param_val.flag_false->octet_str_ran);
-    char* rc_sd_str = cp_ba_to_str(SD->ran_param_val.flag_false->octet_str_ran);
-    nssai_t RC_nssai = {.sst = atoi(rc_sst_str), .sd = atoi(rc_sd_str)};
-    LOG_D(NR_MAC, "RC (oct) SST %s, SD %s -> (uint) SST %d, SD %d\n", rc_sst_str, rc_sd_str, RC_nssai.sst, RC_nssai.sd);
-    ///// SLICE LABEL NAME /////
-    char* sst_str = "SST";
-    char* sd_str = "SD";
-    size_t label_nssai_len = strlen(sst_str) + strlen(rc_sst_str) + strlen(sd_str) + strlen(rc_sd_str) + 1;
-    char* label_nssai = (char*)malloc(label_nssai_len);
-    assert(label_nssai != NULL && "Memory exhausted");
-    sprintf(label_nssai, "%s%s%s%s", sst_str, rc_sst_str, sd_str, rc_sd_str);
-    free(rc_sst_str);
-    free(rc_sd_str);
-
-    ///// SLICE NVS CAP /////
-    seq_ran_param_t* Min_PRB_Policy_Ratio = &RRM_Policy_Ratio_Group->ran_param_struct.ran_param_struct[1];
-    assert(Min_PRB_Policy_Ratio->ran_param_id == Min_PRB_Policy_Ratio_8_4_3_6 && "wrong Min_PRB_Policy_Ratio id");
-    assert(Min_PRB_Policy_Ratio->ran_param_val.type == ELEMENT_KEY_FLAG_FALSE_RAN_PARAMETER_VAL_TYPE && "wrong Min_PRB_Policy_Ratio type");
-    assert(Min_PRB_Policy_Ratio->ran_param_val.flag_false != NULL && "NULL Min_PRB_Policy_Ratio->ran_param_val.flag_false");
-    assert(Min_PRB_Policy_Ratio->ran_param_val.flag_false->type == INTEGER_RAN_PARAMETER_VALUE && "wrong Min_PRB_Policy_Ratio->ran_param_val.flag_false type");
-    int64_t min_prb_ratio = Min_PRB_Policy_Ratio->ran_param_val.flag_false->int_ran;
-    LOG_D(NR_MAC, "configure slice %ld, label %s, Min_PRB_Policy_Ratio %ld\n", i, label_nssai, min_prb_ratio);
-
-    seq_ran_param_t* Dedicated_PRB_Policy_Ratio = &RRM_Policy_Ratio_Group->ran_param_struct.ran_param_struct[3];
-    assert(Dedicated_PRB_Policy_Ratio->ran_param_id == Dedicated_PRB_Policy_Ratio_8_4_3_6 && "wrong Dedicated_PRB_Policy_Ratio id");
-    assert(Dedicated_PRB_Policy_Ratio->ran_param_val.type == ELEMENT_KEY_FLAG_FALSE_RAN_PARAMETER_VAL_TYPE && "wrong Dedicated_PRB_Policy_Ratio type");
-    assert(Dedicated_PRB_Policy_Ratio->ran_param_val.flag_false != NULL && "NULL Dedicated_PRB_Policy_Ratio->ran_param_val.flag_false");
-    assert(Dedicated_PRB_Policy_Ratio->ran_param_val.flag_false->type == INTEGER_RAN_PARAMETER_VALUE && "wrong Dedicated_PRB_Policy_Ratio->ran_param_val.flag_false type");
-    int64_t dedicated_prb_ratio = Dedicated_PRB_Policy_Ratio->ran_param_val.flag_false->int_ran;
-    LOG_I(NR_MAC, "configure slice %ld, label %s, Dedicated_PRB_Policy_Ratio %ld\n", i, label_nssai, dedicated_prb_ratio);
-    // TODO: could be extended to support max prb ratio in the MAC scheduling algorithm
-    //seq_ran_param_t* Max_PRB_Policy_Ratio = &RRM_Policy_Ratio_Group->ran_param_struct.ran_param_struct[2];
-    //assert(Max_PRB_Policy_Ratio->ran_param_id == Max_PRB_Policy_Ratio_8_4_3_6 && "wrong Max_PRB_Policy_Ratio id");
-    //assert(Max_PRB_Policy_Ratio->ran_param_val.type == ELEMENT_KEY_FLAG_FALSE_RAN_PARAMETER_VAL_TYPE && "wrong Max_PRB_Policy_Ratio type");
-    //assert(Max_PRB_Policy_Ratio->ran_param_val.flag_false != NULL && "NULL Max_PRB_Policy_Ratio->ran_param_val.flag_false");
-    //assert(Max_PRB_Policy_Ratio->ran_param_val.flag_false->type == INTEGER_RAN_PARAMETER_VALUE && "wrong Max_PRB_Policy_Ratio->ran_param_val.flag_false type");
-    //int64_t max_prb_ratio = Max_PRB_Policy_Ratio->ran_param_val.flag_false->int_ran;
-    //LOG_I(NR_MAC, "configure slice %ld, label %s, Max_PRB_Policy_Ratio %ld\n", i, label_nssai, max_prb_ratio);
-
-    ///// ADD SLICE /////
-    /* Resource-based */
-    void *params = malloc(sizeof(nvs_nr_slice_param_t));
-    ((nvs_nr_slice_param_t *)params)->type = NVS_RES;
-    ((nvs_nr_slice_param_t *)params)->pct_reserved = dedicated_prb_ratio;
-    const int rc = add_mod_dl_slice(mod_id, current_algo, i+1, RC_nssai, label_nssai, params);
-    free(label_nssai);
-    if (rc < 0) {
-      pthread_mutex_unlock(&nrmac->UE_info.mutex);
-      LOG_E(NR_MAC, "error code %d while updating slices\n", rc);
-      return false;
-    }
-    /* TODO: Bandwidth-based */
-
-    /// ASSOC SLICE ///
-    if (nrmac->pre_processor_dl.algorithm <= 0)
-      LOG_E(NR_MAC, "current slice algo is NONE, no UE can be associated\n");
-
-    if (nrmac->UE_info.list[0] == NULL)
-      LOG_E(NR_MAC, "no UE connected\n");
-
-
-    nr_pp_impl_param_dl_t *dl = &RC.nrmac[mod_id]->pre_processor_dl;
-    NR_UEs_t *UE_info = &RC.nrmac[mod_id]->UE_info;
-    int ue_idx = 0;
-    UE_iterator(UE_info->list, UE) {
-      rnti_t rnti = UE->rnti;
-      NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
-      bool assoc_ue = 0;
-      long lcid = 0;
-      for (int l = 0; l < sched_ctrl->dl_lc_num; ++l) {
-        lcid = sched_ctrl->dl_lc_ids[l];
-        LOG_W(NR_MAC, "looking at slice idx: %d, and ue idx: %d, rnti: %x, l %d, lcid %ld, sst %d, sd %d\n", i, ue_idx, rnti,l, lcid, sched_ctrl->dl_lc_nssai[lcid].sst, sched_ctrl->dl_lc_nssai[lcid].sd);
-        // if (nssai_matches(sched_ctrl->dl_lc_nssai[lcid], RC_nssai.sst, &RC_nssai.sd)) {
-        if (i % 2 == ue_idx % 2) {
-          rrc_gNB_ue_context_t* rrc_ue_context_list = rrc_gNB_get_ue_context_by_rnti_any_du(RC.nrrrc[mod_id], rnti);
-          uint16_t UE_mcc = rrc_ue_context_list->ue_context.ue_guami.mcc;
-          uint16_t UE_mnc = rrc_ue_context_list->ue_context.ue_guami.mnc;
-
-          uint8_t UE_sst = sched_ctrl->dl_lc_nssai[lcid].sst;
-          uint32_t UE_sd = sched_ctrl->dl_lc_nssai[lcid].sd;
-          // LOG_I(NR_MAC, "UE: mcc %d mnc %d, sst %d sd %d, RC: mcc %d mnc %d, sst %d sd %d\n",
-          //       UE_mcc, UE_mnc, UE_sst, UE_sd, RC_mcc, RC_mnc, RC_nssai.sst, RC_nssai.sd);
-
-          // if (UE_mcc == RC_mcc && UE_mnc == RC_mnc && UE_sst == RC_nssai.sst && UE_sd == RC_nssai.sd) {
-          dl->add_UE(dl->slices, UE);
-          LOG_I(NR_MAC, "adding UE with RNTI%x to slice with sst: %d, sd: %d \n", rnti, RC_nssai.sst, RC_nssai.sd);
-
-	        assoc_ue = true;
-
-          // } else {
-            // LOG_E(NR_MAC, "Failed adding UE (PLMN: mcc %d mnc %d, NSSAI: sst %d sd %d) to slice (PLMN: mcc %d mnc %d, NSSAI: sst %d sd %d)\n",
-                  // UE_mcc, UE_mnc, UE_sst, UE_sd, RC_mcc, RC_mnc, RC_nssai.sst, RC_nssai.sd);
-          // }
-        }
-      }
-      ue_idx++;
-      if (!assoc_ue)
-        LOG_E(NR_MAC, "Failed matching UE rnti %x with current slice (sst %d, sd %d), might lost user plane data\n", rnti, RC_nssai.sst, RC_nssai.sd);
-    }
-
-  }
-
-  pthread_mutex_unlock(&nrmac->UE_info.mutex);
-  LOG_D(NR_MAC, "All slices add/mod successfully!\n");
-  return true;
-}
-```
-
+### Install FlexRIC
 Compile the OAI Code:
 ```bash
+cd /mydata/openairinterface5g
 cd cmake_targets
 ./build_oai -c -C -I -w SIMU --gNB --nrUE --build-e2 --ninja
 ```
 
-Compile the Flexric Code, please follow the instructions at the [flexric's gitlab page](https://gitlab.eurecom.fr/mosaic5g/flexrichttps://gitlab.eurecom.fr/mosaic5g/flexric). Please install the SWIG interface per instructions, and then compile the FlexRIC that we just checked out.
-
-### Initial RAN Slicing test
-First please bring up the core network. And also bring up the gnb. 
-
+Compile the Flexric Code, we should follow the instructions at the [flexric's gitlab page](https://gitlab.eurecom.fr/mosaic5g/flexric). Please install the SWIG interface per instructions, and then compile the FlexRIC that we just checked out.
 
 ```bash
-sudo RFSIMULATOR=server ./ran_build/build/nr-softmodem -O /local/repository/etc/gnb.conf --sa --rfsim
+
+git clone https://github.com/swig/swig.git
+cd swig
+git checkout release-4.1
+./autogen.sh
+./configure --prefix=/usr/
+make -j8
+make install
+
+cd /mydata/flexric && mkdir build && cd build && cmake .. && make -j8 
+sudo make install
+
 ```
 
-You would also need to bring up the flexric. 
+### Bring Up the Core Network
+Clone the core network. 
+```bash
+cd /mydata
+git clone https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-fed.git
+cd /mydata/oai-cn5g-fed
+```
+
+First please bring up the core network. 
+
+We aim to reproduce this core network:
+
+![屏幕截图 2024-07-16 162905](/assets/屏幕截图%202024-07-16%20162905.png)
+
+Copy these files into the respective folder. Replace the original files if necessary.
+
++ copy the docker compose file into /mydata/oai-cn5g-fed/docker-compose
+
++ copy the other configuration files into /mydata/oai-cn5g-fed/docker-compose/conf
 
 ```bash
-cd /mydata/flexric/
-./build/examples/ric/nearRT-RIC
+cp /local/repository/etc/core-slice-conf/docker-compose-basic-nrf.yaml /mydata/oai-cn5g-fed/docker-compose
+
+cp /local/repository/etc/core-slice-conf/basic* /mydata/oai-cn5g-fed/docker-compose/conf
 ```
 
+Note that we do not use an NSSF here, as that is only necessary for the multiple NRF case. 
 
-To attach two UEs to the same gnb, we will need some extra work to isolate them into 2 different subnets. This [tutorial](https://gitlab.eurecom.fr/oaiworkshop/summerworkshop2023/-/tree/main/ran#multiple-ues) provides a useful guide. Pleas clone it. 
+The slices that we are adding are sst 1 sd 1 and sst 1 sd 5. So we need to configure that in the gnb.conf at /local/repository/etc. This has already been done for you. But let me explain:
 
-You would probably want two ue configuration file:
-ue.conf
 ```
 uicc0 = {
 imsi = "208950000000031";
@@ -426,39 +229,88 @@ nssai_sd=1;
 @include "channelmod_rfsimu.conf"
 ```
 
-ue2.conf:
-```
-uicc0 = {
-imsi = "208950000000032";
-key = "0C0A34601D4F07677303652C0462535B";
-opc= "63bfa50ee6523365ff14c1f45f88737d";
-dnn= "oai.ipv4";
-nssai_sst=1;
-nssai_sd=5;
-}
+The IMSI, key, opc are for user authentification. The dnn represents the data network that this UE should connect to. Slice information is represented with two numbers, sst and sd. One for slice category, and one for intra slice differentiation. Here we configure the UE to have sst 1 sd 1. This information will be included in the NAS packet that the UE send to the core network upon attachment. The core network will then assign UPF to the UE based on this slicing information.
 
-@include "channelmod_rfsimu.conf"
+The configuration file as usual is in the /local/repository/etc/ folder. Some general principles would be:
+
++ The SST SD is among those provided by the gNB ***AND*** the Core network AMF, otherwise the connection will berejected for sure
+
++ The UE imsi and keychain should match up with the user database, so that it can authenticate. 
+
+Then we bring up the core network, and the gnb, and in the respective SSH sessions, we bring up the two UEs. You should also monitor the logs for AMF, two SMFs, and 2 UPFs. 
+
+```bash
+# core network
+cd /mydata/oai-cn5g-fed/docker-compose  
+sudo python3 ./core-network.py --type start-basic --scenario 1
+```
+> if the containers are not healthy, shut down and retry. It should ahppen very rarely. With the command:
+sudo python3 ./core-network.py --type stop-basic --scenario 1
+
+We will later verify that our core network is connected correctly, after we set up the UE and gNB. 
+
+### Bring up the gNB and attach 2 UEs
+Having brought up the core network, now we are ready to bring up the gnb. 
+
+```bash
+cd /mydata/openairinterface5g/cmake_targets
+sudo RFSIMULATOR=server ./ran_build/build/nr-softmodem -O /local/repository/etc/gnb.conf --sa --rfsim
 ```
 
+You would also need to bring up the flexric. 
+
+```bash
+cd /mydata/flexric/
+./build/examples/ric/nearRT-RIC
+```
+
+To attach two UEs to the same gnb, we will need some extra work to isolate them into 2 different subnets. This [tutorial](https://gitlab.eurecom.fr/oaiworkshop/summerworkshop2023/-/tree/main/ran#multiple-ues) provides a useful guide. But you do not need to read that. I have laid out the usage below. 
 
 To attach the first UE. 
 ```bash
-sudo ~/summerworkshop2023/ran/multi-ue.sh -c1 -e
+cd /mydata
+git clone https://gitlab.eurecom.fr/oaiworkshop/summerworkshop2023.git
+sudo /mydata/summerworkshop2023/ran/multi-ue.sh -c1 -e
 sudo ip netns exec ue1 bash
 #  go back to the oai cmake_targets folder. 
+cd /mydata/openairinterface5g/cmake_targets
 sudo RFSIMULATOR=10.201.1.100 ./ran_build/build/nr-uesoftmodem -O /local/repository/etc/ue.conf -r 106 -C 3619200000 --sa --nokrnmod --numerology 1 --band 78 --rfsim --rfsimulator.options chanmod
 ```
-Check the AMF log that it is attached correctly. 
 
 Then attach the second UE to the gnb:
 ```bash
 sudo /mydata/summerworkshop2023/ran/multi-ue.sh -c3 -e
 sudo ip netns exec ue3 bash
 #  go back to the oai cmake_targets folder. 
+cd /mydata/openairinterface5g/cmake_targets
 sudo RFSIMULATOR=10.203.1.100 ./ran_build/build/nr-uesoftmodem -O /local/repository/etc/ue2.conf -r 106 -C 3619200000 --sa --nokrnmod --numerology 1 --band 78 --rfsim --rfsimulator.options chanmod
 ```
 
-We can verify that both ue is connected to the gnb successfully and can be ping through normally.
+Checking the AMF log with the command:
+```bash
+sudo docker logs -f oai-amf
+```
+You should see something like this:
+
+```
+[2024-07-22 02:35:22.052] [amf_app] [info]
+[2024-07-22 02:35:22.052] [amf_app] [info] |--------------------------------------------------------------------------------------------------------------------|
+[2024-07-22 02:35:22.052] [amf_app] [info] |------------------------------------------------------gNBs' information---------------------------------------------|
+[2024-07-22 02:35:22.052] [amf_app] [info] |    Index    |      Status      |       Global ID       |       gNB Name       |                 PLMN               |
+[2024-07-22 02:35:22.052] [amf_app] [info] |      1      |    Connected     |        0xe000        |       gNB-Eurecom-5GNRBox           |               208, 95              |
+[2024-07-22 02:35:22.052] [amf_app] [info] |--------------------------------------------------------------------------------------------------------------------|
+[2024-07-22 02:35:22.052] [amf_app] [info]
+[2024-07-22 02:35:22.052] [amf_app] [info] |--------------------------------------------------------------------------------------------------------------------|
+[2024-07-22 02:35:22.052] [amf_app] [info] |----------------------------------------------------UEs' information------------------------------------------------|
+[2024-07-22 02:35:22.052] [amf_app] [info] | Index |      5GMM state      |      IMSI        |     GUTI      | RAN UE NGAP ID | AMF UE ID |  PLMN   |  Cell ID  |
+[2024-07-22 02:35:22.052] [amf_app] [info] |      1|       5GMM-REGISTERED|   208950000000031|               |               1|          4| 208, 95 |0x   e00000|
+[2024-07-22 02:35:22.052] [amf_app] [info] |      2|       5GMM-REGISTERED|   208950000000032|               |               2|          5| 208, 95 |0x   e00000|
+[2024-07-22 02:35:22.052] [amf_app] [info] |--------------------------------------------------------------------------------------------------------------------|
+```
+
+With 1 gNB and 2 UEs connected. 
+
+We can verify that both ue is connected to the gnb successfully and can be ping through normally in the gnb terminal session.
 
 ```
 [NR_MAC]   Frame.Slot 128.0
@@ -481,17 +333,22 @@ UE c084: LCID 4: TX             24 RX            532 bytes
 Check that we are pining to the right interface, in different terminal sessions that we just started:
 ```bash
 # UE 1 terminal session
+sudo ip netns exec ue1 bash
 ip addr list
-[OIP]   Interface oaitun_ue1 successfully configured, ip address 12.1.1.156, mask 255.255.255.0 broadcast address 12.1.1.255
+[OIP]   Interface oaitun_ue1 successfully configured, ip address 12.1.1.130, mask 255.255.255.0 broadcast address 12.1.1.255
 
-<!-- a different UE -->
+
 # UE2 terminal session
-[OIP]   Interface oaitun_ue1 successfully configured, ip address 12.1.1.155, mask 255.255.255.0 broadcast address 12.1.1.255
+sudo ip netns exec ue3 bash
+[OIP]   Interface oaitun_ue1 successfully configured, ip address 12.1.1.66, mask 255.255.255.0 broadcast address 12.1.1.255
 ```
+
+
+Because of the way I set up the network, these two IP addresses should be static. Please feel to double check. But from now on, I will use these 2 IP addresses directly. 
 
 Try pinging the two different UEs:
 ```
-root@node:/mydata/flexric/build/examples/xApp/c/ctrl# sudo docker exec -it oai-ext-dn ping -c 10 12.1.1.156
+root@node:/mydata/flexric/build/examples/xApp/c/ctrl# sudo docker exec -it oai-ext-dn ping -c 10 12.1.1.130
 sudo: unable to resolve host node.e2e.nyunetworks.emulab.net: Resource temporarily unavailable
 PING 12.1.1.156 (12.1.1.156) 56(84) bytes of data.
 64 bytes from 12.1.1.156: icmp_seq=1 ttl=63 time=90.1 ms
@@ -508,7 +365,7 @@ PING 12.1.1.156 (12.1.1.156) 56(84) bytes of data.
 --- 12.1.1.156 ping statistics ---
 10 packets transmitted, 10 received, 0% packet loss, time 9011ms
 rtt min/avg/max/mdev = 22.076/64.180/97.149/30.242 ms
-root@node:/mydata/flexric/build/examples/xApp/c/ctrl# sudo docker exec -it oai-ext-dn ping -c 10 12.1.1.155
+root@node:/mydata/flexric/build/examples/xApp/c/ctrl# sudo docker exec -it oai-ext-dn ping -c 10 12.1.1.66
 sudo: unable to resolve host node.e2e.nyunetworks.emulab.net: Resource temporarily unavailable
 PING 12.1.1.155 (12.1.1.155) 56(84) bytes of data.
 64 bytes from 12.1.1.155: icmp_seq=1 ttl=63 time=91.4 ms
@@ -527,6 +384,8 @@ PING 12.1.1.155 (12.1.1.155) 56(84) bytes of data.
 rtt min/avg/max/mdev = 19.683/72.763/96.810/26.626 ms
 ```
 
+If you observe delay on the sub millisecond scale, that means there is something wrong. This generally means that the UE is not connected to the gnb successfully. Either gnb or the core network does not have the slice information properly set up. Please redo each part, and find out where is the problem. 
+
 Then we apply RAN Slicing. 
 
 ```bash
@@ -539,11 +398,24 @@ What outcome did you see in the gnb session when you run the slicing xapp? Pleas
 
 
 ### Verify RAN Slicing with iPerf
-Get the IP address of the first UE, in my case it is 12.1.1.155
+Get the IP address of the first UE, in my case it is 12.1.1.130. It should be the same on your machine. Please double check with the following command. Find the interface called oaitun_ue1:
 ```bash
 sudo ip netns exec ue1 bash
 ip addr list
 ```
+
+You should see something similar to this:
+```
+55: oaitun_ue1: <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UNKNOWN group default qlen 500
+    link/none
+    inet 12.1.1.130/24 brd 12.1.1.255 scope global oaitun_ue1
+       valid_lft forever preferred_lft forever
+    inet6 fe80::509c:4f08:8936:7761/64 scope link stable-privacy
+       valid_lft forever preferred_lft forever
+```
+and 12.1.1.130 is our address. 
+
+
 Then start the iperf server in the same session:
 ```bash
 PeterYao@node:~$ sudo ip netns exec ue1 bash
@@ -561,7 +433,7 @@ root@node:~# iperf3 -s
 You should see something similar to this:
 ```bash
 PeterYao@node:~$ sudo docker exec -it oai-ext-dn bash
-root@581e40107528:/tmp# iperf3 -c 12.1.1.155
+root@581e40107528:/tmp# iperf3 -c 12.1.1.130
 Connecting to host 12.1.1.155, port 5201
 [  4] local 192.168.70.135 port 43686 connected to 12.1.1.155 port 5201
 [ ID] Interval           Transfer     Bandwidth       Retr  Cwnd
@@ -587,85 +459,7 @@ iperf Done.
 Repeat this for the second UE. Submit screenshots. Explain the difference in the throughput (Explain how the RAN Slicing impact the throughput). 
 
 
-
-
-
-### Core Slicing
-Having done the RAN Slicing successfully, we are now ready to do the Core slicing with OAI. We aim to reproduce this core network:
-
-![屏幕截图 2024-07-16 162905](/assets/屏幕截图%202024-07-16%20162905.png)
-
-
-Please download the following files from [this github repo](https://github.com/PeterYaoNYU/5G-E2E-Wireless-Notes-OAI/tree/main/core-slice-conf): 
-
-- docker-compose-basic-nrf.yaml is a docker compose file that brings up all the network functions in one command. 
-- basic_nrf_config.yaml is the configuration file for the AMF
-- the other 2 conf files are for the configuration of the respective slices, the SMF and UPF. 
-
-Copy these files into the respective folder. Replace the original files if necessary.
-
-+ copy the docker compose file into /mydata/oai-cn5g-fed/docker-compose
-
-+ copy the other configuration files into /mydata/oai-cn5g-fed/docker-compose/conf
-
-
-Note that we do not use an NSSF here, as that is only necessary for the multiple NRF case. 
-
-The slices that we are adding are sst 1 sd 1 and sst 1 sd 5. So we need to configure that in the gnb.conf at /local/repository/etc. 
-
-```
-    plmn_list = ({
-                  mcc = 208;
-                  mnc = 95;
-                  mnc_length = 2;
-                  snssaiList = (
-                    {
-                      sst = 1;
-                      sd  = 0x1; // 0 false, else true
-                    },
-                    {
-                      sst = 1;
-                      sd  = 0x112233; // 0 false, else true
-                    },
-                    {
-                      sst = 1;
-                      sd  = 0x5;
-                    }
-                  );
-
-                  });
-```
-
-Theoretically, you should configure the UE configurations as well, but we havealready done that in the RAN Slicing part. Some general principles would be:
-
-+ The SST SD is among those provided by the gNB ***AND*** the Core network AMF, otherwise the connection will berejected for sure
-
-+ The UE imsi and keychain should match up with the user database, so that it can authenticate. 
-
-Then we bring up the core network, and the gnb, and in the respective SSH sessions, we bring up the two UEs. You should also monitor the logs for AMF, two SMFs, and 2 UPFs. 
-
-```bash
-# core network
-cd /mydata/oai-cn5g-fed/docker-compose  
-sudo python3 ./core-network.py --type start-basic --scenario 1
-
-# if the containers are not healthy, shut down and retry. It should ahppen very rarely
-sudo python3 ./core-network.py --type stop-basic --scenario 1
-
-# base station
-sudo RFSIMULATOR=server ./ran_build/build/nr-softmodem -O /local/repository/etc/gnb.conf --sa --rfsim
-
-# In another SSH session, start the first UE:
-
-cd /mydata/openairinterface/cmake_targets
-sudo ip netns exec ue1 bash
-sudo RFSIMULATOR=10.201.1.100 ./ran_build/build/nr-uesoftmodem -O /local/repository/etc/ue.conf -r 106 -C 3619200000 --sa --nokrnmod --numerology 1 --band 78 --rfsim --rfsimulator.options chanmod
-
-# in yet another session, start the second UE:
-udo ip netns exec ue3 bash
-sudo RFSIMULATOR=10.203.1.100 ./ran_build/build/nr-uesoftmodem -O /local/repository/etc/ue2.conf -r 106 -C 3619200000 --sa --nokrnmod --numerology 1 --band 78 --rfsim --rfsimulator.options chanmod
-
-```
+### Core Slicing Verification
 
 #### Verification Technique 1
 You could watch the UPF and the SMF logs in realtime. You should first attach one UE to the base station, and then verify that only SMF1 and UPF1 got the registration request. Repeat similarly for UE2. 
@@ -689,16 +483,36 @@ You should grep the MAC Addresses of the ext-dn, UPF1, UPF2 and the oai gnb.
 
 ```bash
 # for extdn
-PeterYao@node:~$ sudo docker exec -it oai-ext-dn ip addr
+sudo docker exec -it oai-ext-dn ip addr
 # for UPF1, in the UE1 SSH session
-PeterYao@node:~$ sudo docker exec -it oai-upf-slice1 ip addr
+sudo docker exec -it oai-upf-slice1 ip addr
 # for UPF2, in the UE2 SSH session
-PeterYao@node:~$ sudo docker exec -it oai-upf-slice2 ip addr
+sudo docker exec -it oai-upf-slice2 ip addr
 # for the gnb
-PeterYao@node:~$ ip addr list demo-oai
+ip addr list demo-oai
 ```
 
 And you should be able to verify that they go through different datapaths, accoding to how the slice is configured. 
+
+For example, when you run the sudo docker exec -it oai-upf-slice1 ip addr  command, you should see something like this:
+```
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+2: tun0: <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 500
+    link/none
+    inet 12.1.1.129/25 scope global tun0
+       valid_lft forever preferred_lft forever
+1037: eth0@if1038: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default
+    link/ether 02:42:c0:a8:46:86 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet 192.168.70.134/26 brd 192.168.70.191 scope global eth0
+       valid_lft forever preferred_lft forever
+
+```
+
+And here, 02:42:c0:a8:46:86 brd ff:ff:ff:ff:ff:ff is your MAC address. 
+
 
 > Question
 Look into the conf files and docker compose files that you copied into the core network folder, and explain how the core network is setup in the way as depicted in the picture? [This tutorial](https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-fed/-/blob/master/docs/CONFIGURATION.md) may help you understand the different parameters.
@@ -706,10 +520,338 @@ Look into the conf files and docker compose files that you copied into the core 
 >Question 
 Repeat those verification steps on your own machine (the second appraoch), and submit screenshots of ping path, and MAC addresses of different interfaces. Make sure that it is as you would expect. 
 
-### Final step for end-to-end slicing
-First do the core slicing, then bring in the xapp to enforce slicing. Then you will have slicing at both the RAN MAC layer and the core layer. 
+### Slice Setup Troubleshooting and Dimisyfied
+I want to give you some important hints and troubleshooting guide of setting up this slicing in an end to end fashion. 
+
+#### The slice information should really match up
+That means the sst/sd number in UE and gnb and the core setup should match exaclty. If one of them does not match, then a PDU session setup request will be rejected. 
+
+For example in the UE, we talked about having the right sst/sd in the configuration file:
+```
+uicc0 = {
+imsi = "208950000000032";
+key = "0C0A34601D4F07677303652C0462535B";
+opc= "63bfa50ee6523365ff14c1f45f88737d";
+dnn= "oai.ipv4";
+nssai_sst=1;
+nssai_sd=5;
+}
+
+@include "channelmod_rfsimu.conf"
+```
+Similarly in the gnb configraution, it is important that the slice info matches up. 
+
+```
+    plmn_list = ({
+                  mcc = 208;
+                  mnc = 95;
+                  mnc_length = 2;
+                  snssaiList = (
+                    {
+                      sst = 1;
+                      sd  = 0x1; // 0 false, else true
+                    },
+                    {
+                      sst = 1;
+                      sd  = 0x112233; // 0 false, else true
+                    },
+                    {
+                      sst = 1;
+                      sd  = 0x5;                                                                                                         }
+                  );
+
+                  });
+```
+
+We can see in the PLMN list, it has sst1sd1 and sst1sd5 slices, which are the 2 slices that we use.  
+
+Also in the core network, it should also have these slice information. 
+
+For example, in the AMF config, we have all those slice info:
+```
+snssais:
+  - &embb_slice1
+    sst: 1
+  - &embb_slice2
+    sst: 1
+    sd: 000001 # in hex
+  - &custom_slice
+    sst: 222
+    sd: 00007B # in hex
+  - &new_slice
+    sst: 1
+    sd: 000005 # in hex
+
+############## NF-specific configuration
+amf:
+  amf_name: "OAI-AMF"
+  # This really depends on if we want to keep the "mini" version or not
+  support_features_options:
+    enable_simple_scenario: no # "no" by default with the normal deployment scenarios with AMF/SMF/UPF/AUSF/UDM/UDR/NRF.
+                               # set it to "yes" to use with the minimalist deployment scenario (including only AMF/SMF/UPF) by using the internal AUSF/UDM implemented inside AMF.
+                               # There's no NRF in this scenario, SMF info is taken from "nfs" section.
+    enable_nssf: no
+    enable_smf_selection: yes
+  relative_capacity: 30
+  statistics_timer_interval: 20  # in seconds
+  emergency_support: false
+  served_guami_list:
+    - mcc: 208
+      mnc: 95
+      amf_region_id: 01
+      amf_set_id: 001
+      amf_pointer: 01
+    - mcc: 001
+      mnc: 01
+      amf_region_id: 01
+      amf_set_id: 001
+      amf_pointer: 01
+  plmn_support_list:
+    - mcc: 208
+      mnc: 95
+      tac: 0xa000
+      nssai:
+        - *embb_slice1
+        - *embb_slice2
+        - *custom_slice
+        - *new_slice
+  supported_integrity_algorithms:
+    - "NIA0"
+    - "NIA1"
+    - "NIA2"
+  supported_encryption_algorithms:
+    - "NEA0"
+    - "NEA1"
+    - "NEA2"
+
+```
+
+You can see we use embb_slice1 and new_slice here. 
+Otherwise, the UE will be rejected upon connecting to AMF, because AMF is not configured with the slice info. 
+
+You should also see the slice info in the SMF, the SMF will tell the AMF which slice it can handle. We have 2 SMFs, so each one of them is responsible for one slice. 
+
+```
+smf:
+  ue_mtu: 1500
+  support_features:
+    use_local_subscription_info: yes # Use infos from local_subscription_info or from UDM
+    use_local_pcc_rules: yes # Use infos from local_pcc_rules or from PCF
+  # we resolve from NRF, this is just to configure usage_reporting
+  upfs:
+    - host: oai-upf-slice1
+      config:
+        enable_usage_reporting: no
+  ue_dns:
+    primary_ipv4: "172.21.3.100"
+    primary_ipv6: "2001:4860:4860::8888"
+    secondary_ipv4: "8.8.8.8"
+    secondary_ipv6: "2001:4860:4860::8888"
+  ims:
+    pcscf_ipv4: "127.0.0.1"
+    pcscf_ipv6: "fe80::7915:f408:1787:db8b"
+  # the DNN you configure here should be configured in "dnns"
+  # follows the SmfInfo datatype from 3GPP TS 29.510
+  smf_info:
+    sNssaiSmfInfoList:
+      - sNssai: *embb_slice2
+        dnnSmfInfoList:
+          - dnn: "oai"
+  local_subscription_infos:
+    - single_nssai: *embb_slice2
+      dnn: "oai"
+      qos_profile:
+        5qi: 9
+        session_ambr_ul: "100Mbps"
+        session_ambr_dl: "200Mbps"
+```
+For example, this SMF is responsible for embb_slice2, and it also has a UPF under its control. 
+
+#### Different DNNs
+As we can see in the SMF setup above, and the UPF below, they are connected to the data network called oai. 
+
+```
+upf:
+  support_features:
+    enable_bpf_datapath: no    # If "on": BPF is used as datapath else simpleswitch is used, DEFAULT= off
+    enable_snat: yes           # If "on": Source natting is done for UE, DEFAULT= off
+  remote_n6_gw: localhost      # Dummy host since simple-switch does not use N6 GW
+  smfs:
+    - host: oai-smf-slice1            # To be used for PFCP association in case of no-NRF
+  upf_info:
+    sNssaiUpfInfoList:
+      - sNssai: *embb_slice2
+        dnnUpfInfoList:
+          - dnn: "oai"
+```
+
+Meanwhile, the other slice is connected to another data network:
+oai.ipv4. 
+```
+upf:
+  support_features:
+    enable_bpf_datapath: no    # If "on": BPF is used as datapath else simpleswitch is used, DEFAULT= off
+    enable_snat: yes           # If "on": Source natting is done for UE, DEFAULT= off
+  remote_n6_gw: localhost      # Dummy host since simple-switch does not use N6 GW
+  smfs:
+    - host: oai-smf-slice2            # To be used for PFCP association in case of no-NRF
+  upf_info:
+    sNssaiUpfInfoList:
+      - sNssai: *new_slice
+        dnnUpfInfoList:
+          - dnn: "oai.ipv4"
+```
+
+Each of these dnn has a different subnet address range configured. 
+
+```
+dnns:
+  - dnn: "oai"
+    pdu_session_type: "IPV4"
+    ipv4_subnet: "12.1.1.128/25"
+  - dnn: "oai.ipv4"
+    pdu_session_type: "IPV4"
+    ipv4_subnet: "12.1.1.64/26"
+  - dnn: "default"
+    pdu_session_type: "IPV4"
+    ipv4_subnet: "12.1.1.0/26"
+  - dnn: "ims"
+    pdu_session_type: "IPV4V6"
+    ipv4_subnet: "14.1.1.2/24"
+```
+
+The UE is allocated IP according to the address range of this DNN. 
+
+And if we ping from the ext-dn docker container to these UEs, we will use these rules to make sure that the packet go through the right UPFs. 
+```
+        entrypoint: /bin/bash -c \
+              "ip route add 12.1.1.128/25 via 192.168.70.134 dev eth0;"\
+              "ip route add 12.1.1.64/26 via 192.168.70.140 dev eth0; ip route; sleep infinity"
+```
+
+So traffic to DNN oai is going through ine UPF (the 192.168.70.134 is address for one UPF). And traffic to DNN oai.ipv4 is going through another UPF. 
+
+#### AMF and SMF information exchange
+
+Looking into the log help us have a deeper understanding of the UE setup process in a specific slice. 
+
+Here the AMF first received a PDU setup request from UE with slice sst1sd1. 
+```
+[2024-07-22 04:56:27.260] [amf_n2] [info] Received PDU Session Resource Setup Request message, handling
+[2024-07-22 04:56:27.260] [amf_n2] [debug] Handle PDU Session Resource Setup Request ...
+[2024-07-22 04:56:27.260] [amf_n2] [debug] SUPI (imsi-208950000000031)
+[2024-07-22 04:56:27.260] [amf_n2] [debug] S_NSSAI (SST, SD) 1, 1
+InitiatingMessage ::= {
+    procedureCode: 29
+    criticality: 0 (reject)
+    value: PDUSessionResourceSetupRequest ::= {
+        protocolIEs: ProtocolIE-Container ::= {
+            PDUSessionResourceSetupRequestIEs ::= {
+                id: 10
+                criticality: 0 (reject)
+                value: 4
+            }
+            PDUSessionResourceSetupRequestIEs ::= {
+                id: 85
+                criticality: 0 (reject)
+                value: 2
+            }
+            PDUSessionResourceSetupRequestIEs ::= {
+                id: 74
+                criticality: 0 (reject)
+                value: PDUSessionResourceSetupListSUReq ::= {
+                    PDUSessionResourceSetupItemSUReq ::= {
+                        pDUSessionID: 10
+                        pDUSessionNAS-PDU:
+                            7E 02 4D 10 BE CF 02 7E 00 68 01 00 57 2E 0A 01
+                            C2 11 00 09 01 00 06 31 21 01 01 01 09 06 06 00
+                            C8 06 00 64 29 05 01 0C 01 01 82 22 04 01 00 00
+                            01 81 79 00 06 09 20 41 01 01 09 7B 00 0D 80 00
+                            0D 04 AC 15 03 64 00 10 02 05 DC 25 17 03 6F 61
+                            69 06 6D 6E 63 30 39 35 06 6D 63 63 32 30 38 04
+                            67 70 72 73 12 0A
+                        s-NSSAI: S-NSSAI ::= {
+                            sST: 01
+                            sD: 00 00 01
+                        }
+                        pDUSessionResourceSetupRequestTransfer:
+                            00 00 04 00 82 00 0A 0C 0B EB C2 00 30 05 F5 E1
+                            00 00 8B 00 0A 01 F0 C0 A8 46 86 00 00 00 02 00
+                            86 00 01 00 00 88 00 07 00 09 00 00 09 00 00
+                    }
+                }
+            }
+            PDUSessionResourceSetupRequestIEs ::= {
+                id: 110
+                criticality: 1 (ignore)
+                value: UEAggregateMaximumBitRate ::= {
+                    uEAggregateMaximumBitRateDL: 1000000000
+                    uEAggregateMaximumBitRateUL: 1000000000
+                }
+            }
+        }
+    }
+}
+```
+
+There is slicing information that it get from the UE. 
+
+Then it relay the message to the corresponding SMF repsonsible for this slice:
+
+```
+[2024-07-22 04:56:27.382] [smf_app] [debug] Session procedure type: PDU_SESSION_ESTABLISHMENT_UE_REQUESTED
+[2024-07-22 04:56:27.382] [smf_app] [debug] QoS Flow context to be modified QFI 9
+[2024-07-22 04:56:27.382] [smf_app] [debug] AN F-TEID ID 0xd5fde091, IP Addr 192.168.70.129
+[2024-07-22 04:56:27.382] [smf_app] [debug] QoS Flow, QFI 9
+[2024-07-22 04:56:27.382] [smf_app] [warning] Could not get DL FTEID from PDR in DL
+[2024-07-22 04:56:27.382] [smf_app] [debug] Could not get local_up_fteid from created_pdr
+[2024-07-22 04:56:27.382] [smf_app] [debug] UPF graph in SMF finished
+[2024-07-22 04:56:27.382] [smf_app] [info] PDU Session Establishment Request (UE-Initiated)
+[2024-07-22 04:56:27.382] [smf_app] [info] Set PDU Session Status to PDU_SESSION_ACTIVE
+[2024-07-22 04:56:27.382] [smf_app] [info] Set upCnxState to UPCNX_STATE_ACTIVATED
+[2024-07-22 04:56:27.382] [smf_app] [info] SMF context:
+
+SMF CONTEXT:
+SUPI:                           208950000000031
+PDU SESSION:
+        PDU Session ID:                 10
+        DNN:                    oai
+        S-NSSAI:                        SST=1, SD=1
+        PDN type:               IPV4
+        PAA IPv4:               12.1.1.130
+        Default QFI:            9
+        SEID:                   5
+        N3:
+                QoS Flow:
+                        QFI:            9
+                        UL FTEID:       TEID=2, IPv4=192.168.70.134
+                        DL FTEID:       TEID=3590185105, IPv4=192.168.70.129
+                        PDR ID UL:      1
+                        PDR ID DL:      2
+                        Precedence:     0
+                        FAR ID UL:      1
+                        FAR ID DL:      2
+
+
+[2024-07-22 04:56:27.382] [smf_app] [debug] Send request to N11 to triger FlexCN, SMF Context ID 0x2
+[2024-07-22 04:56:27.382] [smf_app] [debug] Get PDU Session information related to SMF Context ID 0x2
+[2024-07-22 04:56:27.382] [smf_app] [debug] Get PDU Session information related to SMF Context ID 0x2
+[2024-07-22 04:56:27.382] [smf_app] [info] Find PDU Session with ID 10
+[2024-07-22 04:56:27.382] [smf_app] [info] Find PDU Session with ID 10
+[2024-07-22 04:56:27.382] [smf_app] [debug] Send request to N11 to triger FlexCN (Event Exposure), SUPI 208950000000031 , PDU Session ID 10, HTTP version 1
+[2024-07-22 04:56:27.382] [smf_app] [debug] No subscription available for this event
+[2024-07-22 04:56:27.382] [smf_app] [debug] Send request to N11 to triger FlexCN, SMF Context ID 0x2
+[2024-07-22 04:56:27.382] [smf_app] [debug] Get PDU Session information related to SMF Context ID 0x2
+[2024-07-22 04:56:27.382] [smf_app] [info] Find PDU Session with ID 10
+```
+
+Above is the log from SMF for sst1sd1 slice. It received the PDU request relayed by AMF, which also contians the slice info from UE, and a PDU session is created. 
+
+
+### Final recap for end-to-end slicing
+First we did the core slicing, then we brought up the gnb and attach 2 UEs to it. Then we bring in the xapp to enforce slicing. Finally you will have slicing at both the RAN MAC layer and the core layer. 
 
 ## References:
 [1] Robert Schmidt, Mikel Irazabal, and Navid Nikaein. 2021. FlexRIC: an SDK for next-generation SD-RANs. In Proceedings of the 17th International Conference on emerging Networking EXperiments and Technologies (CoNEXT '21). Association for Computing Machinery, New York, NY, USA, 411–425. https://doi.org/10.1145/3485983.3494870
 
-
+[2] R. Kokku, R. Mahindra, H. Zhang and S. Rangarajan, "NVS: A Substrate for Virtualizing Wireless Resources in Cellular Networks," in IEEE/ACM Transactions on Networking, vol. 20, no. 5, pp. 1333-1346, Oct. 2012, doi: 10.1109/TNET.2011.2179063. keywords: {Base stations;Resource management;Bandwidth;WiMAX;Quality of service;Downlink;Cellular networks;flow scheduling;network slicing;programmability;spectrum sharing;virtualization;wireless resource management},
