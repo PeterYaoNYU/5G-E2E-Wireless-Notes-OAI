@@ -1,0 +1,598 @@
+> do not ever forget to configure the iptable in the namespace leaving the namesapce. Something like the following is needed:
+
+
+```
+ ip route add default via 192.168.100.1 dev veth-namespace
+```
+
+
+I am setting up an e2e experiment, with 2 l4s enabled routers, one delay node, one server, one base station, 2 UEs. 
+
+This section in the docker compose file inspire me to think about how to route oncoming traffic to the right UPF:
+
+```
+    oai-ext-dn:
+        privileged: true
+        init: true
+        container_name: oai-ext-dn
+        image: oaisoftwarealliance/trf-gen-cn5g:latest
+        entrypoint: /bin/bash -c \
+              "ip route add 12.1.1.128/25 via 192.168.70.134 dev eth0;"\
+              "ip route add 12.1.1.64/26 via 192.168.70.140 dev eth0; ip route; sleep infinity"
+        command: ["/bin/bash", "-c", "trap : SIGTERM SIGINT; sleep infinity & wait"]
+        healthcheck:
+            test: /bin/bash -c "ip r | grep 12.1.1"
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        networks:
+            public_net:
+                ipv4_address: 192.168.70.135
+```
+
+I think this can be configured correctly on the base station node. I just need to make sure that the server can indeed send traffic to the UPF docker container with that address. 
+
+I begin to see that OAI latest version does not seem to be compatible with ubuntu 22. 
+It will result in installation error. 
+
+```
+WARNING: 7 warnings. See /mydata/openairinterface5g/cmake_targets/log/all.txt
+ERROR: 3 error. See /mydata/openairinterface5g/cmake_targets/log/all.txt
+compilation of rfsimulator nr-softmodem nr-cuup nr-uesoftmodem params_libconfig coding rfsimulator dfts failed
+build have failed
+```
+This is not very ideal. I will have to tweak the profile to adapt to this. 
+
+
+When installing packages on the rx node, may encounter apt issue because of the ubuntu version being 18, can easily resolve with:
+```
+sudo apt --fix-broken install
+sudo apt -y install iperf3 net-tools moreutils
+```
+
+
+At the rx0 node. 
+```
+sudo ip route add 12.1.1.64/26 via 192.168.70.140
+
+sudo ip route add 12.1.1.128/25 via 192.168.70.134
+```
+
+
+At the router1, adding routing rule as well. 
+
+```
+sudo ip route add 12.1.1.64/26 via 10.0.5.100
+sudo ip route add 12.1.1.128/25 via 10.0.5.100
+
+```
+
+router0:
+```
+sudo ip route add 12.1.1.64/26 via 10.0.2.1
+sudo ip route add 12.1.1.128/25 via 10.0.2.1
+```
+
+tx0:
+```
+sudo ip route add 12.1.1.64/26 via 10.0.0.2
+sudo ip route add 12.1.1.128/25 via 10.0.0.2
+```
+
+pinging okay. 
+
+Configuring the network to have non l4s. (Scenario 1)
+
+On all 4 nodes:
+
+make sure that unmae -r  gives the kernel version: 5.15.72-56eae305c-prague-91
+```
+sudo sysctl -w net.ipv4.tcp_congestion_control=cubic  
+sudo sysctl -w net.ipv4.tcp_ecn=0
+```
+
+Turn off all segmentatation offload on all 4 machines. 
+
+router1:
+```
+sudo tc qdisc del dev enp4s0f0 root
+sudo tc qdisc replace dev enp4s0f0 root handle 1: htb default 3
+sudo tc class add dev enp4s0f0 parent 1: classid 1:3 htb rate 25mbit
+
+sudo tc qdisc add dev enp4s0f0 parent 1:3 handle 3: bfifo limit 625000
+```
+
+so the dl egress of router1 is configured as
+```
+PeterYao@router1:~$ sudo tc qdisc show dev enp6s0f2
+qdisc htb 1: root refcnt 9 r2q 10 default 0x3 direct_packets_stat 0 direct_qlen 1000
+qdisc bfifo 3: parent 1:3 limit 625000b
+```
+
+router0
+```
+sudo tc qdisc del dev enp6s0f2 root
+sudo tc qdisc replace dev enp6s0f2 root handle 1: htb default 3
+sudo tc class add dev enp6s0f2 parent 1: classid 1:3 htb rate 1000mbit
+
+sudo tc qdisc del dev enp6s0f1 root
+sudo tc qdisc replace dev enp6s0f1 root handle 1: htb default 3
+sudo tc class add dev enp6s0f1 parent 1: classid 1:3 htb rate 1000mbit
+
+sudo tc qdisc add dev enp6s0f2 parent 1:3 handle 3: bfifo limit 625000
+sudo tc qdisc add dev enp6s0f1 parent 1:3 handle 3: bfifo limit 625000
+
+```
+
+so router 0 shows the following configuration. 
+
+```
+PeterYao@router0:~$ sudo tc qdisc show dev enp6s0f1
+qdisc htb 1: root refcnt 9 r2q 10 default 0x3 direct_packets_stat 0 direct_qlen 1000
+qdisc bfifo 3: parent 1:3 limit 625000b
+PeterYao@router0:~$ sudo tc qdisc show dev enp6s0f2
+qdisc htb 1: root refcnt 9 r2q 10 default 0x3 direct_packets_stat 0 direct_qlen 1000
+qdisc bfifo 3: parent 1:3 limit 625000b
+```
+All just simple deep fifo queues. 
+
+actually later I decided to not use simple fifo queues on router0. I keep the original codel default queue that is the same up every boot. So the queue should look something like this:
+
+```
+PeterYao@router0:~$ sudo tc qdisc show dev enp4s0f1
+qdisc mq 0: root
+qdisc fq_codel 0: parent :8 limit 10240p flows 1024 quantum 1514 target 5ms interval 100ms memory_limit 32Mb ecn drop_batch 64
+qdisc fq_codel 0: parent :7 limit 10240p flows 1024 quantum 1514 target 5ms interval 100ms memory_limit 32Mb ecn drop_batch 64
+qdisc fq_codel 0: parent :6 limit 10240p flows 1024 quantum 1514 target 5ms interval 100ms memory_limit 32Mb ecn drop_batch 64
+qdisc fq_codel 0: parent :5 limit 10240p flows 1024 quantum 1514 target 5ms interval 100ms memory_limit 32Mb ecn drop_batch 64
+qdisc fq_codel 0: parent :4 limit 10240p flows 1024 quantum 1514 target 5ms interval 100ms memory_limit 32Mb ecn drop_batch 64
+qdisc fq_codel 0: parent :3 limit 10240p flows 1024 quantum 1514 target 5ms interval 100ms memory_limit 32Mb ecn drop_batch 64
+qdisc fq_codel 0: parent :2 limit 10240p flows 1024 quantum 1514 target 5ms interval 100ms memory_limit 32Mb ecn drop_batch 64
+qdisc fq_codel 0: parent :1 limit 10240p flows 1024 quantum 1514 target 5ms interval 100ms memory_limit 32Mb ecn drop_batch 64
+
+PeterYao@router0:~$ sudo tc qdisc show dev enp4s0f0
+qdisc mq 0: root
+qdisc fq_codel 0: parent :8 limit 10240p flows 1024 quantum 1514 target 5ms interval 100ms memory_limit 32Mb ecn drop_batch 64
+qdisc fq_codel 0: parent :7 limit 10240p flows 1024 quantum 1514 target 5ms interval 100ms memory_limit 32Mb ecn drop_batch 64
+qdisc fq_codel 0: parent :6 limit 10240p flows 1024 quantum 1514 target 5ms interval 100ms memory_limit 32Mb ecn drop_batch 64
+qdisc fq_codel 0: parent :5 limit 10240p flows 1024 quantum 1514 target 5ms interval 100ms memory_limit 32Mb ecn drop_batch 64
+qdisc fq_codel 0: parent :4 limit 10240p flows 1024 quantum 1514 target 5ms interval 100ms memory_limit 32Mb ecn drop_batch 64
+qdisc fq_codel 0: parent :3 limit 10240p flows 1024 quantum 1514 target 5ms interval 100ms memory_limit 32Mb ecn drop_batch 64
+qdisc fq_codel 0: parent :2 limit 10240p flows 1024 quantum 1514 target 5ms interval 100ms memory_limit 32Mb ecn drop_batch 64
+qdisc fq_codel 0: parent :1 limit 10240p flows 1024 quantum 1514 target 5ms interval 100ms memory_limit 32Mb ecn drop_batch 64
+```
+
+they are kept as the default. 
+
+Running iperf for the 2 UEs one by one:
+UE1:
+```
+[ ID] Interval           Transfer     Bandwidth
+[  5]   0.00-60.61  sec  0.00 Bytes  0.00 bits/sec                  sender
+[  5]   0.00-60.61  sec   158 MBytes  21.9 Mbits/sec                  receiver
+```
+
+UE2:
+```
+[ ID] Interval           Transfer     Bandwidth
+[  5]   0.00-60.67  sec  0.00 Bytes  0.00 bits/sec                  sender
+[  5]   0.00-60.67  sec   158 MBytes  21.8 Mbits/sec                  receiver
+```
+
+So I guess setting the btl to 25mbps is too high to form a queue. Let me set it to 15 mbps instead:
+
+router1:
+```
+sudo tc qdisc del dev enp6s0f2 root
+sudo tc qdisc replace dev enp6s0f2 root handle 1: htb default 3
+sudo tc class add dev enp6s0f2 parent 1: classid 1:3 htb rate 15mbit
+
+sudo tc qdisc add dev enp6s0f2 parent 1:3 handle 3: bfifo limit 625000
+```
+
+Now I am seeing the thp that I expect to see:
+
+UE1:
+```
+[ ID] Interval           Transfer     Bandwidth
+[  5]   0.00-60.32  sec  0.00 Bytes  0.00 bits/sec                  sender
+[  5]   0.00-60.32  sec   101 MBytes  14.1 Mbits/sec                  receiver
+```
+
+UE2 is the same. 
+
+running iperf for 2 UEs simultaneously:
+```
+iperf3 -c 12.1.1.130 -p 5001 -t 60 -i 1 &
+iperf3 -c 12.1.1.66 -p 5002 -t 60 -i 1 &
+```
+
+UE1:
+```
+[ ID] Interval           Transfer     Bandwidth
+[  5]   0.00-60.32  sec  0.00 Bytes  0.00 bits/sec                  sender
+[  5]   0.00-60.32  sec  57.0 MBytes  7.92 Mbits/sec                  receiver
+```
+
+UE2:
+```
+[ ID] Interval           Transfer     Bandwidth
+[  5]   0.00-60.33  sec  0.00 Bytes  0.00 bits/sec                  sender
+[  5]   0.00-60.33  sec  45.3 MBytes  6.30 Mbits/sec                  receiver
+```
+They are sharing the link more or less equally?
+
+Running for the third time:
+```bash
+# ue1
+[ ID] Interval           Transfer     Bandwidth
+[  5]   0.00-60.49  sec  0.00 Bytes  0.00 bits/sec                  sender
+[  5]   0.00-60.49  sec  50.7 MBytes  7.03 Mbits/sec                  receiver
+# ue2
+[ ID] Interval           Transfer     Bandwidth
+[  5]   0.00-60.39  sec  0.00 Bytes  0.00 bits/sec                  sender
+[  5]   0.00-60.39  sec  50.2 MBytes  6.97 Mbits/sec                  receiver
+```
+
+maybe we want to run the ss+iperf experiment as well, to collect some result. 
+
+the test script is:
+```bash
+#!/bin/bash
+
+# Check if an argument is provided
+if [ -z "$1" ]; then
+    echo "Usage: $0 {prague|cubic-ecn1|cubic-ecn-none|cubic-ecn-20}"
+    exit 1
+fi
+
+# Variables
+duration=20  # Replace with your desired duration
+flows=1      # Replace with your desired number of flows
+iperf_server_1="10.0.5.100"
+iperf_server_2="10.0.5.101"  # Add the second iperf server
+
+# Determine the flow variable and congestion control based on the argument
+case "$1" in
+    prague)
+        flow="prague_2.0_100_25_single_queue_FQ_1_2_1"
+        cc="prague"
+        ;;
+    cubic-ecn1)
+        flow="cubic_2.0_100_25_single_queue_FQ_1_1_1"
+        cc="cubic"
+        ;;
+    cubic-ecn-none)
+        flow="cubic_2.0_100_25_single_queue_FQ_none_0_1"
+        cc="cubic"
+        ;;
+    cubic-ecn-20)
+        flow="cubic_2.0_100_25_single_queue_FQ_20_1_1"
+        cc="cubic"
+        ;;
+    *)
+        echo "Invalid argument: $1"
+        echo "Usage: $0 {prague|cubic-ecn1|cubic-ecn-none|cubic-ecn-20}"
+        exit 1
+        ;;
+esac
+
+# Start ss monitoring for the first UE in the background
+rm -f ${flow}-ss-ue1.txt
+start_time=$(date +%s)
+while true; do
+    ss --no-header -eipn dst $iperf_server_1 | ts '%.s' | tee -a ${flow}-ss-ue1.txt
+    current_time=$(date +%s)
+    elapsed_time=$((current_time - start_time))
+    if [ $elapsed_time -ge $duration ]; then
+        break
+    fi
+    sleep 0.1
+done &
+
+# Start ss monitoring for the second UE in the background
+rm -f ${flow}-ss-ue2.txt
+start_time=$(date +%s)
+while true; do
+    ss --no-header -eipn dst $iperf_server_2 | ts '%.s' | tee -a ${flow}-ss-ue2.txt
+    current_time=$(date +%s)
+    elapsed_time=$((current_time - start_time))
+    if [ $elapsed_time -ge $duration ]; then
+        break
+    fi
+    sleep 0.1
+done &
+
+# Give some time for ss monitoring to start
+sleep 1
+
+# Start iperf3 for the first UE
+iperf3 -c $iperf_server_1 -t $duration -P $flows -C $cc -p 4000 -J > ${flow}-result-ue1.json &
+
+# Start iperf3 for the second UE
+iperf3 -c $iperf_server_2 -t $duration -P $flows -C $cc -p 4000 -J > ${flow}-result-ue2.json &
+
+# Wait for background processes to complete
+wait
+
+echo "Iperf tests completed."
+
+```
+
+
+After adding slicing:
+
+I repeat serveral times:
+```
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bandwidth
+[  5]   0.00-60.35  sec  0.00 Bytes  0.00 bits/sec                  sender
+[  5]   0.00-60.35  sec  55.9 MBytes  7.77 Mbits/sec                  receiver
+
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bandwidth
+[  5]   0.00-60.39  sec  0.00 Bytes  0.00 bits/sec                  sender
+[  5]   0.00-60.39  sec  45.9 MBytes  6.37 Mbits/sec                  receiver
+```
+
+Does it have to do with the fact that we have routing in place? The result is not shoing much disparity. 
+
+It seems that the slicing fails apart. 
+```
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bandwidth
+[  5]   0.00-60.29  sec  0.00 Bytes  0.00 bits/sec                  sender
+[  5]   0.00-60.29  sec  52.5 MBytes  7.31 Mbits/sec                  receiver
+
+
+[ ID] Interval           Transfer     Bandwidth
+[  5]   0.00-60.52  sec  0.00 Bytes  0.00 bits/sec                  sender
+[  5]   0.00-60.52  sec  49.5 MBytes  6.86 Mbits/sec                  receiver
+```
+
+Weird thing is that if I limit the iperf time to 20 seconds, I can still somehow see the effect of slicing in place. 
+
+Is this because of the queueing policy? Will the problem persist if there is no restriction on btl links? Power cycle to see
+
+
+This problem goes away when the queue and bottleneck links are rest. 
+
+
+```
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bandwidth
+[  5]   0.00-61.42  sec  0.00 Bytes  0.00 bits/sec                  sender
+[  5]   0.00-61.42  sec  92.7 MBytes  12.7 Mbits/sec                  receiver
+
+[ ID] Interval           Transfer     Bandwidth
+[  5]   0.00-62.21  sec  0.00 Bytes  0.00 bits/sec                  sender
+[  5]   0.00-62.21  sec  40.9 MBytes  5.51 Mbits/sec                  receiver
+
+```
+Apparently the problem is that, since queue is building up, it cause ran slicing to  lose effect. This phenomenom is interesting. 
+
+> if the ip routing does not work, it is probably that the firwall drops it. Change by this commnad: sudo iptables -P FORWARD ACCEPT   on the rx machine. 
+
+after the automation, change the ownership of the mydata partition. 
+
+the ownership needs to be chanegd recursively. 
+
+```bash
+username=$(whoami)
+groupname=$(id -gn)
+sudo chown -R $username:$groupname /mydata
+chmod 775 /mydata
+```
+
+Actually, I have updated the test script, the latest one should always be at this link:
+
+https://github.com/PeterYaoNYU/core-network-5g/blob/main/etc/experiment.sh
+
+running the exepriment, start the iperf server process at the two UEs:
+
+```
+sudo ip netns exec ue1 bash 
+iperf3 -s -p 4000
+
+
+sudo ip netns exec ue3 bash 
+iperf3 -s -p 4000
+```
+
+then run the experiment script on the tx0 node:
+```
+bash experiment.sh cubic-ecn-none
+
+
+```
+
+
+### Second experiment (with Slicing only)
+
+```bash
+sudo sysctl -w net.ipv4.tcp_congestion_control=cubic
+
+sudo sysctl -w net.ipv4.tcp_ecn=0
+```
+
+at the endpoint (the 2 namespaces and the sender). 
+
+
+```bash
+
+sudo sysctl -w net.ipv4.tcp_ecn=0
+```
+
+at every intermediate node
+
+
+Check with:
+```bash
+sysctl net.ipv4.tcp_ecn
+sysctl net.ipv4.tcp_congestion_control
+```
+
+check the btl link queueing discipline:
+```bash
+sudo tc qdisc show dev enp4s0f0
+```
+
+I set it to the following:
+```bash
+PeterYao@router1:~$ sudo tc qdisc show dev enp4s0f0
+qdisc htb 1: root refcnt 9 r2q 10 default 0x3 direct_packets_stat 0 direct_qlen 1000
+qdisc bfifo 3: parent 1:3 limit 625000b
+```
+
+> use the python notebook to turn off all offloads
+
+Then run the experiment.
+
+```bash
+sudo ip netns exec ue1 bash 
+iperf3 -s -p 4000
+```
+
+```bash
+sudo ip netns exec ue3 bash 
+iperf3 -s -p 4000
+```
+
+```bash
+bash ./experiment.sh cubic-ecn-none-slicing
+```
+
+
+### experiment3 (dualqueue l4s + slicing)
+
+```bash
+#configuration for DUALPI2 bottleneck
+sudo apt-get update
+sudo apt -y install git gcc make bison flex libdb-dev libelf-dev pkg-config libbpf-dev libmnl-dev libcap-dev libatm1-dev selinux-utils libselinux1-dev
+sudo git clone https://github.com/L4STeam/iproute2.git
+cd iproute2
+sudo chmod +x configure
+sudo ./configure
+sudo make
+sudo make install
+sudo modprobe sch_dualpi2
+```
+
+> sudo modprobe sch_dualpi2 should not have any output 
+
+
+at the bottleneck link (router1): (interface name subject to change for different cloudlab instance)
+
+```bash
+sudo tc qdisc del dev enp4s0f0 root
+sudo tc qdisc replace dev enp4s0f0 root handle 1: htb default 3 
+sudo tc class add dev enp4s0f0 parent 1: classid 1:3 htb rate 25mbit 
+
+sudo tc qdisc add dev enp4s0f0 parent 1:3 handle 3: dualpi2 target 1ms
+```
+
+check with 
+```bash
+sudo tc qdisc show dev enp4s0f0
+```
+
+I see the following output
+```bash
+PeterYao@router1:~$ sudo tc qdisc show dev enp4s0f0
+qdisc htb 1: root refcnt 9 r2q 10 default 0x3 direct_packets_stat 0 direct_qlen 1000
+qdisc dualpi2 3: parent 1:3 limit 10000p target 1ms tupdate 16ms alpha 0.156250 beta 3.195312 l4s_ect coupling_factor 2 drop_on_overload step_thresh 1ms drop_dequeue split_gso classic_protection 10%
+```
+
+in ue1 terminal (the l4s low latency UE), enable l4s and accurate ecn and tcp prague
+```bash
+sudo sysctl -w net.ipv4.tcp_congestion_control=prague  
+sudo sysctl -w net.ipv4.tcp_ecn=3
+```
+
+do the same in the tx node, othwewise the iperf3 will not have prague cc to choose. 
+
+check with 
+```bash
+sysctl net.ipv4.tcp_congestion_control
+sysctl net.ipv4.tcp_ecn
+```
+
+run the experiment
+```bash
+bash experiment.sh prague
+```
+
+### verfiy TCP prague
+check what is causing the TCP prague to function abnormally. First we need to set up routing correctly. 
+
+at tx0:
+
+```
+sudo ip route add 10.201.1.0/24 via 10.0.0.2
+sudo ip route add 10.203.1.0/24 via 10.0.0.2
+```
+
+at router0:
+```
+sudo ip route add 10.201.1.0/24 via 10.0.2.1
+sudo ip route add 10.203.1.0/24 via 10.0.2.1
+```
+
+at router1:
+
+```
+sudo ip route add 10.201.1.0/24 via 10.0.5.100
+sudo ip route add 10.203.1.0/24 via 10.0.5.100
+```
+
+at the ue1 namespace:
+```
+sudo ip route add 10.0.0.0/24 via 10.201.1.100
+```
+so that the icmp messages can be routed back to the sender. 
+
+
+at the ue3 namesapce:
+```
+sudo ip route add 10.0.0.0/24 via 10.203.1.100
+```
+
+Then we enable tcp prague at ue1 namesapce and tcp cubic and ue3 namespace. 
+
+UE1:
+```bash
+sudo ip netns exec ue1 bash
+sudo sysctl -w net.ipv4.tcp_congestion_control=prague  
+sudo sysctl -w net.ipv4.tcp_ecn=3
+```
+
+UE3:
+```bash
+sudo ip netns exec ue3 bash
+sudo sysctl -w net.ipv4.tcp_congestion_control=cubic  
+sudo sysctl -w net.ipv4.tcp_ecn=0
+```
+
+then start iperf server sessions at both namespaces:
+
+```bash
+iperf3 -s -p 4000
+```
+
+running iperf for 2 UE namespaces simultaneously:
+```
+iperf3 -c 10.201.1.1 -C prague -p 4000 -t 60 -i 1 &
+iperf3 -c 10.203.1.3 -C cubic -p 4000 -t 60 -i 1 &
+```
+
+
+
+
+
+
+
+
+
+
+
+
