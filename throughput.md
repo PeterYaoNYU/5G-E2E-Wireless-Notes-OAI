@@ -92,7 +92,7 @@ This tutorial contains incomplete guide to setup core and gnb separately.
 this is the profile to setup a POWDER/CLOUDLAB testbed with an extra link connecting 2 servers back to back. 
 
 On the Core machine, do the following:
-``bash
+```bash
         sudo sysctl net.ipv4.conf.all.forwarding=1
         sudo iptables -P FORWARD ACCEPT
 ```

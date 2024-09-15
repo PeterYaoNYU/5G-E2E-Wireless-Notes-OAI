@@ -138,5 +138,5 @@ Connecting to host 12.1.1.131, port 5201
 [  4]   0.00-60.00  sec   167 MBytes  23.3 Mbits/sec                  receiver
 
 iperf Done.
-root@29b9bec80e0f:/tmp#
 ```
+

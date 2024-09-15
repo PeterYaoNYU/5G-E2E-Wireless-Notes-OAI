@@ -456,7 +456,7 @@ iperf Done.
 ```
 
 >Question
-Repeat this for the second UE. Submit screenshots. Explain the difference in the throughput (Explain how the RAN Slicing impact the throughput). 
+Repeat this for the second UE. Submit screenshots. Explain the difference in the throughput (Explain how the RAN Slicing impact the throughput). Because of the way we assign NVS weight, the other slice's throughput should be roughly a half of the throughput you obtained from the procedure above. Because of the NVS , the second UE get roughly half the PRBs of the first slice above. 
 
 
 ### Core Slicing Verification
