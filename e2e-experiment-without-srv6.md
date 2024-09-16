@@ -547,14 +547,16 @@ sudo ip route add 10.203.1.0/24 via 10.0.5.100
 
 at the ue1 namespace:
 ```
-sudo ip route add 10.0.0.0/24 via 10.201.1.100
+sudo ip netns exec ue1 bash
+sudo ip route add default via 10.201.1.100
 ```
 so that the icmp messages can be routed back to the sender. 
 
 
 at the ue3 namesapce:
 ```
-sudo ip route add 10.0.0.0/24 via 10.203.1.100
+sudo ip netns exec ue3 bash
+sudo ip route add default via 10.203.1.100
 ```
 
 Then we enable tcp prague at ue1 namesapce and tcp cubic and ue3 namespace. 
