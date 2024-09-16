@@ -70,7 +70,7 @@ sleep 1
 iperf3 -c $iperf_server_1 -t $duration -P $flows -C $cc -p 4000 -J > ${flow}-result-ue1.json &
 
 # Start iperf3 for the second UE
-iperf3 -c $iperf_server_2 -t $duration -P $flows -C $cc -p 4000 -J > ${flow}-result-ue2.json &
+iperf3 -c $iperf_server_2 -t $duration -P $flows -C cubic -p 4000 -J > ${flow}-result-ue2.json &
 
 # Wait for background processes to complete
 wait
