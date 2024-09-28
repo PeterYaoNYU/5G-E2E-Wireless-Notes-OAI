@@ -128,3 +128,8 @@ sudo docker-compose -f docker-compose-ue-slice1.yaml up oai-nr-ue2
 ```
 
 
+to monitor with xapp the RLC buffer size:
+```bash
+/mydata/flexric/build/examples/xApp/c/monitor/xapp_gtp_mac_rlc_pdcp_moni
+```
+
