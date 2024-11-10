@@ -81,7 +81,7 @@ the interesting thing is that the RF simulator address is not set correctly:
 version: '3.8'
 services:
     oai-nr-ue1:
-        image: oaisoftwarealliance/oai-nr-ue:develop
+        image: oaisoftwarealliance/oai-nr-ue:2024.w30
         privileged: true
         container_name: rfsim5g-oai-nr-ue1
         environment: 
@@ -98,11 +98,11 @@ services:
             retries: 5
 
     oai-nr-ue2:
-        image: oaisoftwarealliance/oai-nr-ue:develop
+        image: oaisoftwarealliance/oai-nr-ue:2024.w30
         privileged: true
         container_name: rfsim5g-oai-nr-ue2
         environment: 
-            RFSIMULATOR: 10.201.1.100
+            RFSIMULATOR: 10.203.1.100
             USE_ADDITIONAL_OPTIONS: --sa --rfsim -r 106 --numerology 1 -C 3619200000 
         volumes:
             - ./ran-conf/ue2.conf:/opt/oai-nr-ue/etc/nr-ue.conf
@@ -121,9 +121,15 @@ networks:
 
 but when the RF simulator address is set to 127.0.0.1, it will not work. I suppose that 127.0.0.1 is local to the docker network. But still the purpose of rf simulator is not totally clear to me. 
 
+
+Note that you should not use the latest version of the docker container: namely with the develop tag. It has some serious issues / totally different ways of loading the configuration files for the RAN. 
+
 ```
 cd /mydata/oai-cn5g-fed/docker-compose/
 sudo docker-compose -f docker-compose-ue-slice1.yaml up oai-nr-ue1
+
+
+cd /mydata/oai-cn5g-fed/docker-compose/
 sudo docker-compose -f docker-compose-ue-slice1.yaml up oai-nr-ue2
 ```
 
@@ -132,4 +138,55 @@ to monitor with xapp the RLC buffer size:
 ```bash
 /mydata/flexric/build/examples/xApp/c/monitor/xapp_gtp_mac_rlc_pdcp_moni
 ```
+```
+cp /mydata/core-network-5g/etc/core-slice-conf/docker-compose-basic-nrf.yaml /mydata/oai-cn5g-fed/docker-compose
 
+cp /mydata/core-network-5g/etc/core-slice-conf/basic* /mydata/oai-cn5g-fed/docker-compose/conf
+
+cp /mydata/core-network-5g/etc/new_core_network.py /mydata/oai-cn5g-fed/docker-compose  
+```
+
+Configure differen cca and ecn inside the container. Check on the 5G node. 
+```python
+rx.sudo("docker exec rfsim5g-oai-nr-ue1 sysctl -w net.ipv4.tcp_congestion_control=prague")
+rx.sudo("docker exec rfsim5g-oai-nr-ue1 sysctl -w net.ipv4.tcp_ecn=3")
+rx.sudo("docker exec rfsim5g-oai-nr-ue1 sysctl net.ipv4.tcp_ecn")
+rx.sudo("docker exec rfsim5g-oai-nr-ue1 sysctl net.ipv4.tcp_congestion_control")
+
+
+
+rx.sudo("docker exec rfsim5g-oai-nr-ue2 sysctl -w net.ipv4.tcp_congestion_control=cubic")
+rx.sudo("docker exec rfsim5g-oai-nr-ue2 sysctl -w net.ipv4.tcp_ecn=0")
+rx.sudo("docker exec rfsim5g-oai-nr-ue2 sysctl net.ipv4.tcp_ecn")
+rx.sudo("docker exec rfsim5g-oai-nr-ue2 sysctl net.ipv4.tcp_congestion_control")
+```
+
+
+At the rx0 node. 
+```
+sudo ip route add 12.1.1.64/26 via 192.168.70.140
+
+sudo ip route add 12.1.1.128/25 via 192.168.70.134
+
+sudo iptables -P FORWARD ACCEPT
+```
+
+> very important
+at the ue1 namespace:
+```
+sudo ip netns exec ue1 bash
+sudo /mydata/summerworkshop2023/ran/multi-ue.sh -c1 -e 
+sudo ip route add default via 10.201.1.100
+```
+so that the icmp messages can be routed back to the sender. 
+
+
+at the ue3 namesapce:
+```
+sudo ip netns exec ue3 bash
+sudo /mydata/summerworkshop2023/ran/multi-ue.sh -c3 -e 
+
+sudo ip route add default via 10.203.1.100
+```
+
+during the 
